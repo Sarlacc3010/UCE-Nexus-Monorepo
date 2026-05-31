@@ -1,11 +1,14 @@
 // src/index.ts
 import express from 'express';
-import type { Request, Response, NextFunction } from 'express'; // <-- Solución al error TS1295 y TS1484
+import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import type { VerifyErrors, JwtPayload } from 'jsonwebtoken';
 import jwksClient from 'jwks-rsa';
 import dotenv from 'dotenv';
+import path from 'path';
+import * as grpc from '@grpc/grpc-js';
+import * as protoLoader from '@grpc/proto-loader';
 
 dotenv.config();
 
@@ -15,15 +18,14 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Configuración del cliente JWKS para obtener las llaves públicas de Keycloak
+// 1. SEGURIDAD: Configuración de Keycloak
 const client = jwksClient({
-    jwksUri: 'http://localhost:8080/realms/uce-nexus/protocol/openid-connect/certs'
+    jwksUri: 'http://localhost:8080/realms/UCE-Nexus/protocol/openid-connect/certs'
 });
 
-// Función para obtener la llave pública y validar la firma del Token
 function getKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
     if (!header.kid) {
-        callback(new Error("No Key ID found in token header"), undefined);
+        callback(new Error("No Key ID found"), undefined);
         return;
     }
     client.getSigningKey(header.kid, function (err, key) {
@@ -31,32 +33,23 @@ function getKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
             callback(err, undefined);
             return;
         }
-        const signingKey = key.getPublicKey();
-        callback(null, signingKey);
+        callback(null, key.getPublicKey());
     });
 }
 
-// Middleware de Seguridad (Interceptor)
 const authenticateJWT = (req: Request, res: Response, next: NextFunction): void => {
     const authHeader = req.headers.authorization;
-
     if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.split(' ')[1];
-
-        // Solución al error TS2769: Aseguramos a TypeScript que el token es un string
         if (!token) {
             res.status(401).json({ error: 'Token mal formado.' });
             return;
         }
-
-        // Solución al error TS7006: Tipamos explícitamente err y decoded
         jwt.verify(token, getKey, { algorithms: ['RS256'] }, (err: VerifyErrors | null, decoded: string | JwtPayload | undefined) => {
             if (err) {
                 res.status(403).json({ error: 'Token inválido o expirado. Acceso denegado.' });
                 return;
             }
-
-            // Si es válido, guardamos los datos del estudiante en la request y continuamos
             (req as any).user = decoded;
             next();
         });
@@ -65,27 +58,48 @@ const authenticateJWT = (req: Request, res: Response, next: NextFunction): void 
     }
 };
 
-// ==========================================
-// RUTAS DE PRUEBA Y ENRUTAMIENTO FUTURO
-// ==========================================
+// 2. CONEXIÓN gRPC: Cargar el contrato y crear el cliente
+const PROTO_PATH = path.resolve(__dirname, '../../../packages/proto-contracts/booking.proto');
+const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+    keepCase: true, longs: String, enums: String, defaults: true, oneofs: true
+});
+const bookingProto = grpc.loadPackageDefinition(packageDefinition).booking as any;
+const bookingClient = new bookingProto.BookingService('localhost:50051', grpc.credentials.createInsecure());
 
-// Ruta pública (Healthcheck)
+// 3. RUTAS
 app.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'API Gateway Operativo', gateway: 'MS-01' });
 });
 
-// Ruta protegida
+// Ruta protegida que ahora llama a Go
 app.post('/api/reservas', authenticateJWT, (req: Request, res: Response) => {
     const estudiante = (req as any).user;
 
-    res.json({
-        message: `Petición autorizada para el estudiante. Enrutando a MS-06 Booking Engine...`,
-        simulated_action: "Llamada gRPC pendiente",
-        userData: estudiante
+    // Armamos el mensaje según lo que definimos en el .proto
+    const grpcRequest = {
+        user_id: estudiante.preferred_username || "estudiante_desconocido",
+        resource_type: "Laboratorio",
+        resource_id: "LAB-Cisco-01",
+        date: new Date().toISOString()
+    };
+
+    // Disparamos la llamada gRPC hacia el MS-06 en Go
+    bookingClient.CreateBooking(grpcRequest, (err: any, response: any) => {
+        if (err) {
+            console.error("Error gRPC:", err);
+            res.status(500).json({ error: 'Fallo al comunicarse con el motor de reservas (MS-06)' });
+            return;
+        }
+
+        // Si Go responde correctamente, le devolvemos esa respuesta al Frontend
+        res.json({
+            gateway_message: `Petición autorizada para ${estudiante.preferred_username}.`,
+            ms_06_response: response
+        });
     });
 });
 
 app.listen(PORT, () => {
     console.log(`🚀 UCE-Nexus API Gateway corriendo en http://localhost:${PORT}`);
-    console.log(`🛡️  Seguridad JWT respaldada por Keycloak habilitada.`);
+    console.log(`🛡️  Seguridad JWT y cliente gRPC habilitados.`);
 });
