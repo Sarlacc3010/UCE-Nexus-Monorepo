@@ -64,7 +64,8 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
     keepCase: true, longs: String, enums: String, defaults: true, oneofs: true
 });
 const bookingProto = grpc.loadPackageDefinition(packageDefinition).booking as any;
-const bookingClient = new bookingProto.BookingService('localhost:50051', grpc.credentials.createInsecure());
+const bookingServiceUrl = process.env.BOOKING_SERVICE_URL || 'localhost:50051';
+const bookingClient = new bookingProto.BookingService(bookingServiceUrl, grpc.credentials.createInsecure());
 
 // 3. RUTAS
 app.get('/health', (req: Request, res: Response) => {

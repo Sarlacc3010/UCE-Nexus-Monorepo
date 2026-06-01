@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	pb "uce-nexus/ms-06-booking/pb"
@@ -63,9 +64,13 @@ func (s *server) CreateBooking(ctx context.Context, req *pb.BookingRequest) (*pb
 }
 
 func main() {
-	// Inicializamos la conexión al contenedor local de Redis
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379" // Respaldo para cuando corres en local sin Docker
+	}
+
 	rdb = redis.NewClient(&redis.Options{
-		Addr: "localhost:6379", // Puerto donde corre tu Redis en Docker
+		Addr: redisAddr,
 	})
 
 	// Verificamos que Redis responda (Ping)
