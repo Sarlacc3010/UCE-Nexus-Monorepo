@@ -2,9 +2,9 @@ name: UCE-Nexus CI Pipeline
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "dev", "qa" ]
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "dev", "qa" ]
 
 jobs:
   build-gateway:
