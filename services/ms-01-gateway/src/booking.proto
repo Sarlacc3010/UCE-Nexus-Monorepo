@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package booking;
+
+// Esta es la línea clave que el compilador está buscando:
+option go_package = "uce-nexus/ms-06-booking/pb";
+
+// El servicio que el MS-06 (Go) va a exponer
+service BookingService {
+  rpc CreateBooking (BookingRequest) returns (BookingResponse);
+}
+
+// Lo que Node.js le enviará a Go
+message BookingRequest {
+  string user_id = 1;
+  string resource_type = 2; 
+  string resource_id = 3;
+  string date = 4;
+}
+
+// Lo que Go le responderá a Node.js
+message BookingResponse {
+  bool success = 1;
+  string message = 2;
+  string booking_id = 3;
+}

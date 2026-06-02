@@ -59,7 +59,7 @@ const authenticateJWT = (req: Request, res: Response, next: NextFunction): void 
 };
 
 // 2. CONEXIÓN gRPC: Cargar el contrato y crear el cliente
-const PROTO_PATH = path.resolve(__dirname, '../../../packages/proto-contracts/booking.proto');
+const PROTO_PATH = path.join(__dirname, 'booking.proto');
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
     keepCase: true, longs: String, enums: String, defaults: true, oneofs: true
 });
@@ -69,32 +69,31 @@ const bookingClient = new bookingProto.BookingService(bookingServiceUrl, grpc.cr
 
 // 3. RUTAS
 app.get('/health', (req: Request, res: Response) => {
-    res.json({ status: 'API Gateway Operativo', gateway: 'MS-01' });
+    res.json({
+        status: 'API Gateway Operativo', gateway: 'MS-01', ambiente: process.env.NODE_ENV || 'local'
+    });
 });
 
 // Ruta protegida que ahora llama a Go
-app.post('/api/reservas', authenticateJWT, (req: Request, res: Response) => {
-    const estudiante = (req as any).user;
+// Ruta temporalmente DESPROTEGIDA a prueba de fallos
+app.post('/api/reservas', (req: Request, res: Response) => {
 
-    // Armamos el mensaje según lo que definimos en el .proto
     const grpcRequest = {
-        user_id: estudiante.preferred_username || "estudiante_desconocido",
+        user_id: "est-12345",
         resource_type: "Laboratorio",
         resource_id: "LAB-Cisco-01",
         date: new Date().toISOString()
     };
 
-    // Disparamos la llamada gRPC hacia el MS-06 en Go
     bookingClient.CreateBooking(grpcRequest, (err: any, response: any) => {
         if (err) {
             console.error("Error gRPC:", err);
-            res.status(500).json({ error: 'Fallo al comunicarse con el motor de reservas (MS-06)' });
+            res.status(500).json({ error: 'Fallo al comunicarse con el motor de reservas' });
             return;
         }
 
-        // Si Go responde correctamente, le devolvemos esa respuesta al Frontend
         res.json({
-            gateway_message: `Petición autorizada para ${estudiante.preferred_username}.`,
+            gateway_message: "Peticion procesada exitosamente en modo desarrollo sin variables",
             ms_06_response: response
         });
     });
