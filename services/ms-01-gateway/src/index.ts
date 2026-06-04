@@ -20,7 +20,7 @@ app.use(express.json());
 
 // 1. SEGURIDAD: Configuración de Keycloak
 const client = jwksClient({
-    jwksUri: 'http://localhost:8080/realms/UCE-Nexus/protocol/openid-connect/certs'
+    jwksUri: process.env.KEYCLOAK_JWKS_URI || 'http://localhost:8080/realms/UCE-Nexus/protocol/openid-connect/certs'
 });
 
 function getKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
@@ -74,15 +74,98 @@ app.get('/health', (req: Request, res: Response) => {
     });
 });
 
-// Ruta protegida que ahora llama a Go
-// Ruta temporalmente DESPROTEGIDA a prueba de fallos
-app.post('/api/reservas', (req: Request, res: Response) => {
+// Proxy de Autenticación para evitar bloqueos de CORS en el navegador (BFF pattern)
+app.post('/api/login', async (req: Request, res: Response): Promise<void> => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        res.status(400).json({ error: 'Usuario y contraseña son requeridos.' });
+        return;
+    }
+
+    try {
+        // Obtenemos la URL base de Keycloak a partir del JWKS URI configurado
+        const jwksUri = process.env.KEYCLOAK_JWKS_URI || 'http://localhost:8080/realms/UCE-Nexus/protocol/openid-connect/certs';
+        const keycloakBaseUrl = jwksUri.split('/realms/')[0];
+        const tokenUrl = `${keycloakBaseUrl}/realms/UCE-Nexus/protocol/openid-connect/token`;
+
+        const response = await fetch(tokenUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+                client_id: 'uce-client',
+                username: username,
+                password: password,
+                grant_type: 'password'
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            res.json(data);
+        } else {
+            res.status(response.status).json(data);
+        }
+    } catch (error: any) {
+        console.error('Error al redirigir autenticación a Keycloak:', error);
+        res.status(500).json({ error: 'Error de conexión con el servidor de autenticación Keycloak.' });
+    }
+});
+
+// Proxy de refresco de tokens para evitar bloqueos de CORS (BFF pattern)
+app.post('/api/refresh', async (req: Request, res: Response): Promise<void> => {
+    const { refresh_token } = req.body;
+
+    if (!refresh_token) {
+        res.status(400).json({ error: 'Refresh token es requerido.' });
+        return;
+    }
+
+    try {
+        const jwksUri = process.env.KEYCLOAK_JWKS_URI || 'http://localhost:8080/realms/UCE-Nexus/protocol/openid-connect/certs';
+        const keycloakBaseUrl = jwksUri.split('/realms/')[0];
+        const tokenUrl = `${keycloakBaseUrl}/realms/UCE-Nexus/protocol/openid-connect/token`;
+
+        const response = await fetch(tokenUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+                client_id: 'uce-client',
+                refresh_token: refresh_token,
+                grant_type: 'refresh_token'
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            res.json(data);
+        } else {
+            res.status(response.status).json(data);
+        }
+    } catch (error: any) {
+        console.error('Error al refrescar token en Keycloak:', error);
+        res.status(500).json({ error: 'Error de conexión con el servidor de autenticación Keycloak.' });
+    }
+});
+
+// Ruta protegida que ahora llama a Go con autenticación JWT activa
+app.post('/api/reservas', authenticateJWT, (req: Request, res: Response) => {
+    const decoded = (req as any).user;
+    
+    // Extrae el ID de usuario desde el token decodificado de Keycloak (sub o username)
+    const userId = decoded?.sub || decoded?.preferred_username || "est-12345";
 
     const grpcRequest = {
-        user_id: "est-12345",
-        resource_type: "Laboratorio",
-        resource_id: "LAB-Cisco-01",
-        date: new Date().toISOString()
+        user_id: userId,
+        resource_type: req.body.resource_type || "Laboratorio",
+        resource_id: req.body.resource_id || "LAB-Cisco-01",
+        date: req.body.date || new Date().toISOString()
     };
 
     bookingClient.CreateBooking(grpcRequest, (err: any, response: any) => {
@@ -93,7 +176,7 @@ app.post('/api/reservas', (req: Request, res: Response) => {
         }
 
         res.json({
-            gateway_message: "Peticion procesada exitosamente en modo desarrollo sin variables",
+            gateway_message: "Petición autenticada y procesada exitosamente en el motor de reservas",
             ms_06_response: response
         });
     });
