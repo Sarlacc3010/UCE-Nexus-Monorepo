@@ -79,10 +79,12 @@ jobs:
           ssh app-server "echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u ${{ github.actor }} --password-stdin"
           
           # 2. Descargar últimas imágenes y levantar servicios
+          # Convertir repository_owner a minúsculas
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           ssh app-server "
             cd /home/ubuntu/app && \
-            REGISTRY_OWNER=${{ github.repository_owner }} docker-compose -f docker-compose.prod.yml pull && \
-            REGISTRY_OWNER=${{ github.repository_owner }} docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            REGISTRY_OWNER=${OWNER_LOWER} docker-compose -f docker-compose.prod.yml pull && \
+            REGISTRY_OWNER=${OWNER_LOWER} docker-compose -f docker-compose.prod.yml up -d --remove-orphans
           "
           
           # 3. Limpieza de imágenes huérfanas/antiguas para liberar espacio
