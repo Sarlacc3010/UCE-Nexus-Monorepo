@@ -1,28 +1,42 @@
+# ==========================================
 # Etapa 1: Construcción (Builder)
+# ==========================================
 FROM golang:alpine AS builder
 
 WORKDIR /app
 
-# Descargamos las dependencias
+# Instalar certificados CA para poder hacer peticiones HTTPS seguras desde la app si es necesario
+RUN apk --no-cache add ca-certificates
+
+# Descargar las dependencias
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copiamos el código fuente, incluyendo la carpeta autogenerada 'pb'
+# Copiar el código fuente
 COPY . .
 
-# Compilamos el binario y lo llamamos 'booking-engine'
-RUN go build -o booking-engine main.go
+# Compilar el binario estáticamente para Linux:
+# - CGO_ENABLED=0 deshabilita enlaces dinámicos a librerías C locales
+# - -ldflags="-w -s" remueve símbolos de depuración para reducir peso y aumentar seguridad
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o booking-engine main.go
 
-# Etapa 2: Imagen final ultra ligera
-FROM alpine:latest
+# ==========================================
+# Etapa 2: Imagen de Producción (Runner)
+# ==========================================
+# Usar imagen distroless estática (sin shell, sin herramientas, mínimo vector de ataque)
+FROM gcr.io/distroless/static-debian12 AS runner
 
 WORKDIR /app
 
-# Copiamos ÚNICAMENTE el binario ya compilado desde la etapa anterior
+# Copiar los certificados de CA y el binario de Go desde el builder
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/booking-engine .
 
-# Exponemos el puerto de gRPC
+# Ejecutar usando el usuario no-root 'nonroot' pre-construido en distroless (UID 65532)
+USER 65532:65532
+
+# Exponer el puerto del servicio gRPC
 EXPOSE 50051
 
-# Ejecutamos el binario
+# Ejecutar el binario
 CMD ["./booking-engine"]

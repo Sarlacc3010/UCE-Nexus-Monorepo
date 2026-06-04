@@ -10,6 +10,7 @@ export default defineConfig({
       // Aquí le decimos al Host dónde ir a buscar el código del módulo académico
       remotes: {
         academic: 'http://localhost:5001/assets/remoteEntry.js',
+        gateway: 'http://localhost:5002/assets/remoteEntry.js',
       },
       shared: ['react', 'react-dom']
     })
