@@ -1,0 +1,43 @@
+# ==========================================
+# Etapa 1: Construcción (Builder)
+# ==========================================
+FROM rust:slim AS builder
+
+WORKDIR /app
+
+# Instalar dependencias de compilación para gRPC y TLS/SSL
+RUN apt-get update && apt-get install -y \
+    protobuf-compiler \
+    libssl-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar manifiestos y código fuente
+COPY Cargo.toml build.rs ./
+COPY proto ./proto
+COPY src ./src
+
+# Compilar para producción en modo release
+RUN cargo build --release
+
+# ==========================================
+# Etapa 2: Imagen de Producción (Runner)
+# ==========================================
+FROM debian:bookworm-slim AS runner
+
+WORKDIR /app
+
+# Instalar dependencias mínimas requeridas en runtime (SSL y certificados)
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar el binario construido desde la etapa anterior
+COPY --from=builder /app/target/release/ms-11-catalog ./catalog-service
+
+# Exponer el puerto gRPC
+EXPOSE 50052
+
+# Ejecutar como servicio
+CMD ["./catalog-service"]

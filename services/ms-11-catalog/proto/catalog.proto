@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package catalog;
+
+option go_package = "uce-nexus/ms-11-catalog/pb";
+
+service CatalogService {
+  rpc GetLaboratory (GetLaboratoryRequest) returns (LaboratoryResponse);
+  rpc CheckAvailability (CheckAvailabilityRequest) returns (AvailabilityResponse);
+}
+
+message GetLaboratoryRequest {
+  string code = 1;
+}
+
+message CheckAvailabilityRequest {
+  string code = 1;
+  string date = 2;
+}
+
+message LaboratoryResponse {
+  string id = 1;
+  string code = 2;
+  string name = 3;
+  string location = 4;
+  int32 capacity = 5;
+  repeated string equipment = 6;
+  bool is_active = 7;
+}
+
+message AvailabilityResponse {
+  string code = 1;
+  string date = 2;
+  bool is_available = 3;
+  string message = 4;
+}
