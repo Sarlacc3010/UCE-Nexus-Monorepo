@@ -55,6 +55,40 @@ services:
     networks:
       - nexus-network
 
+  # MS-11: Catalog Service (Rust gRPC)
+  ms-11-catalog:
+    build:
+      context: ../../services/ms-11-catalog
+      dockerfile: dockerfile
+    container_name: nexus-ms-11-catalog
+    restart: unless-stopped
+    ports:
+      - "50052:50052"
+    environment:
+      - PORT=50052
+      - DATABASE_URL=postgres://catalog_user:catalog_password@postgres-catalog:5432/uce_catalog_dev
+    depends_on:
+      - postgres-catalog
+    networks:
+      - nexus-network
+
+  # MS-07: Notifications Service (Python FastAPI / RabbitMQ Consumer)
+  ms-07-notifications:
+    build:
+      context: ../../services/ms-07-notifications
+      dockerfile: dockerfile
+    container_name: nexus-ms-07-notifications
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672/
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - rabbitmq
+    networks:
+      - nexus-network
+
   # ==========================================
   # 2. SEGURIDAD E IDENTIDAD (Keycloak)
   # ==========================================
@@ -66,6 +100,8 @@ services:
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: password
       POSTGRES_DB: keycloak
+    volumes:
+      - pg-iam-data:/var/lib/postgresql/data
     ports:
       - "5431:5432"
     networks:
@@ -105,8 +141,25 @@ services:
       POSTGRES_USER: uce
       POSTGRES_PASSWORD: password
       POSTGRES_DB: uce_nexus_dev
+    volumes:
+      - pg-app-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - nexus-network
+
+  postgres-catalog:
+    image: postgres:15-alpine
+    container_name: nexus-db-catalog
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: catalog_user
+      POSTGRES_PASSWORD: catalog_password
+      POSTGRES_DB: uce_catalog_dev
+    volumes:
+      - pg-catalog-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
     networks:
       - nexus-network
 
@@ -117,6 +170,8 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongo-data:/data/db
     ports:
       - "27017:27017"
     networks:
@@ -126,6 +181,8 @@ services:
     image: redis:7-alpine
     container_name: nexus-redis
     restart: unless-stopped
+    volumes:
+      - redis-data:/data
     ports:
       - "6379:6379"
     networks:
@@ -186,6 +243,18 @@ services:
     command: "mosquitto -c /mosquitto-no-auth.conf"
     networks:
       - nexus-network
+
+volumes:
+  pg-iam-data:
+    driver: local
+  pg-app-data:
+    driver: local
+  pg-catalog-data:
+    driver: local
+  mongo-data:
+    driver: local
+  redis-data:
+    driver: local
 
 networks:
   nexus-network:
