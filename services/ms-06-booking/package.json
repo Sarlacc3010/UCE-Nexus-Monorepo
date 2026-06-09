@@ -1,0 +1,11 @@
+{
+  "name": "ms-06-booking",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "go build -o target/booking main.go",
+    "dev": "go run main.go",
+    "dev:local": "go run main.go",
+    "test": "go test ./..."
+  }
+}

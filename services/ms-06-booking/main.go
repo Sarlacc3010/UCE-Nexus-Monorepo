@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -11,11 +12,18 @@ import (
 	pb "uce-nexus/ms-06-booking/pb"
 
 	"github.com/go-redis/redis/v8"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/grpc"
 )
 
 // Variable global para nuestro cliente de Redis
 var rdb *redis.Client
+
+// Variables globales para RabbitMQ
+var mqConn *amqp.Connection
+var mqChannel *amqp.Channel
+
+const queueName = "booking_events"
 
 type server struct {
 	pb.UnimplementedBookingServiceServer
@@ -56,11 +64,90 @@ func (s *server) CreateBooking(ctx context.Context, req *pb.BookingRequest) (*pb
 	// 5. Liberamos el Lock para que otros puedan usar el recurso
 	rdb.Del(ctx, lockKey)
 
+	// --- PUBLICACIÓN DE EVENTO EN RABBITMQ ---
+	type BookingEvent struct {
+		BookingID    string `json:"booking_id"`
+		UserID       string `json:"user_id"`
+		ResourceType string `json:"resource_type"`
+		ResourceID   string `json:"resource_id"`
+		Date         string `json:"date"`
+	}
+
+	event := BookingEvent{
+		BookingID:    "BKG-777",
+		UserID:       req.GetUserId(),
+		ResourceType: req.GetResourceType(),
+		ResourceID:   req.GetResourceId(),
+		Date:         req.GetDate(),
+	}
+
+	eventBytes, err := json.Marshal(event)
+	if err != nil {
+		log.Printf("❌ Error al serializar evento de reserva: %v", err)
+	} else {
+		err = mqChannel.PublishWithContext(
+			ctx,
+			"",        // exchange
+			queueName, // routing key
+			false,     // mandatory
+			false,     // immediate
+			amqp.Publishing{
+				ContentType: "application/json",
+				Body:        eventBytes,
+			},
+		)
+		if err != nil {
+			log.Printf("❌ Error al publicar evento en RabbitMQ: %v", err)
+		} else {
+			log.Printf("📤 [RabbitMQ] Evento publicado con éxito: %s", string(eventBytes))
+		}
+	}
+	// -----------------------------------------
+
 	return &pb.BookingResponse{
 		Success:   true,
 		Message:   "¡Reserva procesada exitosamente con control de concurrencia!",
 		BookingId: "BKG-777",
 	}, nil
+}
+
+func initRabbitMQ() {
+	mqURI := os.Getenv("RABBITMQ_URI")
+	if mqURI == "" {
+		mqURI = "amqp://guest:guest@localhost:5672/"
+	}
+
+	var err error
+	for i := 0; i < 5; i++ {
+		mqConn, err = amqp.Dial(mqURI)
+		if err == nil {
+			break
+		}
+		log.Printf("⚠️ No se pudo conectar a RabbitMQ (intento %d/5): %v. Reintentando en 3s...", i+1, err)
+		time.Sleep(3 * time.Second)
+	}
+	if err != nil {
+		log.Fatalf("❌ Error fatal: No se pudo conectar a RabbitMQ. %v", err)
+	}
+
+	mqChannel, err = mqConn.Channel()
+	if err != nil {
+		log.Fatalf("❌ Error fatal: No se pudo crear el canal de RabbitMQ: %v", err)
+	}
+
+	_, err = mqChannel.QueueDeclare(
+		queueName, // name
+		true,      // durable
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
+	)
+	if err != nil {
+		log.Fatalf("❌ Error fatal: No se pudo declarar la cola de RabbitMQ: %v", err)
+	}
+
+	log.Printf("🟢 Conexión a RabbitMQ establecida exitosamente y cola '%s' de eventos lista.", queueName)
 }
 
 func main() {
@@ -78,6 +165,17 @@ func main() {
 		log.Fatalf("❌ Error fatal: No se pudo conectar a Redis. ¿Está corriendo el contenedor? %v", err)
 	}
 	log.Printf("🟢 Conexión a Redis establecida exitosamente.")
+
+	// Inicializamos RabbitMQ
+	initRabbitMQ()
+	defer func() {
+		if mqChannel != nil {
+			mqChannel.Close()
+		}
+		if mqConn != nil {
+			mqConn.Close()
+		}
+	}()
 
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
