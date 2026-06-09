@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import './App.css'
 
 function App() {
   const [token, setToken] = useState('');
@@ -70,84 +71,43 @@ function App() {
   ];
 
   return (
-    <div style={{
-      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      color: '#f8fafc',
-      maxWidth: '800px',
-      margin: '0 auto'
-    }}>
+    <div className="academic-container animate-fade-in" id="academic-panel">
       {/* Tarjeta de Reservas */}
-      <div style={{
-        backgroundColor: '#1e293b',
-        borderRadius: '12px',
-        padding: '24px',
-        border: '1px solid #334155',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-          <div style={{ fontSize: '28px' }}>🔬</div>
+      <div className="booking-card">
+        <header className="booking-header">
+          <div className="booking-header-icon">🔬</div>
           <div>
-            <h2 style={{ margin: 0, fontSize: '20px', color: '#6366f1', fontWeight: 700 }}>Reserva de Laboratorios y Recursos</h2>
-            <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#94a3b8' }}>
+            <h2 className="booking-title" id="booking-section-title">Reserva de Laboratorios y Recursos</h2>
+            <p className="booking-subtitle">
               Este Módulo conecta con el API Gateway de Node.js, el cual realiza la autorización JWT y ejecuta la reserva en el motor de Go mediante gRPC y control de concurrencia en Redis.
             </p>
           </div>
-        </div>
+        </header>
 
-        {/* Indicador de sesión activa en lugar de input de token */}
+        {/* Indicador de sesión activa */}
         {!token ? (
-          <div style={{
-            padding: '12px 16px',
-            backgroundColor: '#ef444415',
-            border: '1px solid #ef4444',
-            borderRadius: '8px',
-            fontSize: '13px',
-            color: '#f87171',
-            marginBottom: '20px',
-            fontWeight: 500
-          }}>
-            🔒 Debes iniciar sesión en la barra lateral del portal para habilitar el formulario de reservas.
+          <div className="session-status-container session-status-inactive" id="session-status-alert">
+            <span>🔒</span> Debes iniciar sesión en la barra lateral del portal para habilitar el formulario de reservas.
           </div>
         ) : (
-          <div style={{
-            padding: '12px 16px',
-            backgroundColor: '#10b98115',
-            border: '1px solid #10b981',
-            borderRadius: '8px',
-            fontSize: '13px',
-            color: '#34d399',
-            marginBottom: '20px',
-            fontWeight: 500,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
+          <div className="session-status-container session-status-active" id="session-status-alert">
             <span>🔑</span> Sesión de Keycloak activa y vinculada de manera segura.
           </div>
         )}
 
         {/* Parámetros del Recurso */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+        <div className="form-grid-2x2">
           {/* Tipo de Recurso */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#e2e8f0', marginBottom: '8px' }}>
-              1. Tipo de Recurso:
+            <label className="booking-field-label" htmlFor="select-resource-type">
+              1. Tipo de Recurso
             </label>
             <select
+              id="select-resource-type"
               value={resourceType}
               onChange={(e) => setResourceType(e.target.value)}
               disabled={!token}
-              style={{
-                width: '100%',
-                padding: '10px',
-                borderRadius: '8px',
-                border: '1px solid #475569',
-                backgroundColor: '#0f172a',
-                color: '#f8fafc',
-                fontSize: '13px',
-                outline: 'none',
-                opacity: token ? 1 : 0.5
-              }}
+              className="booking-select"
             >
               <option value="Laboratorio">Laboratorio</option>
               <option value="Biblioteca">Biblioteca</option>
@@ -157,24 +117,15 @@ function App() {
 
           {/* Recurso Específico */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#e2e8f0', marginBottom: '8px' }}>
-              2. Selección del Recurso:
+            <label className="booking-field-label" htmlFor="select-resource-id">
+              2. Selección del Recurso
             </label>
             <select
+              id="select-resource-id"
               value={resourceId}
               onChange={(e) => setResourceId(e.target.value)}
               disabled={!token}
-              style={{
-                width: '100%',
-                padding: '10px',
-                borderRadius: '8px',
-                border: '1px solid #475569',
-                backgroundColor: '#0f172a',
-                color: '#f8fafc',
-                fontSize: '13px',
-                outline: 'none',
-                opacity: token ? 1 : 0.5
-              }}
+              className="booking-select"
             >
               {labs.map(lab => (
                 <option key={lab.id} value={lab.id}>{lab.name}</option>
@@ -184,93 +135,52 @@ function App() {
         </div>
 
         {/* Fecha y Hora */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+        <div className="form-grid-2x2" style={{ marginBottom: '28px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#e2e8f0', marginBottom: '8px' }}>
-              3. Fecha:
+            <label className="booking-field-label" htmlFor="input-booking-date">
+              3. Fecha
             </label>
             <input
+              id="input-booking-date"
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               disabled={!token}
-              style={{
-                width: '100%',
-                padding: '9px',
-                borderRadius: '8px',
-                border: '1px solid #475569',
-                backgroundColor: '#0f172a',
-                color: '#f8fafc',
-                fontSize: '13px',
-                outline: 'none',
-                opacity: token ? 1 : 0.5
-              }}
+              className="booking-input-date"
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#e2e8f0', marginBottom: '8px' }}>
-              4. Hora de Inicio:
+            <label className="booking-field-label" htmlFor="input-booking-time">
+              4. Hora de Inicio
             </label>
             <input
+              id="input-booking-time"
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
               disabled={!token}
-              style={{
-                width: '100%',
-                padding: '9px',
-                borderRadius: '8px',
-                border: '1px solid #475569',
-                backgroundColor: '#0f172a',
-                color: '#f8fafc',
-                fontSize: '13px',
-                outline: 'none',
-                opacity: token ? 1 : 0.5
-              }}
+              className="booking-input-date"
             />
           </div>
         </div>
 
         {/* Botón de Envío */}
         <button
+          id="btn-submit-booking"
           onClick={handleBooking}
           disabled={isLoading || !token}
-          style={{
-            backgroundColor: (isLoading || !token) ? '#475569' : '#6366f1',
-            color: 'white',
-            border: 'none',
-            padding: '12px 24px',
-            borderRadius: '8px',
-            cursor: (isLoading || !token) ? 'not-allowed' : 'pointer',
-            fontWeight: 700,
-            fontSize: '14px',
-            width: '100%',
-            transition: 'background-color 0.2s',
-            boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)'
-          }}
+          className="booking-submit-button"
         >
           {isLoading ? 'Solicitando y Procesando Mutex Lock...' : '🚀 Enviar Solicitud de Reserva'}
         </button>
 
         {/* Panel de Respuesta (Consola) */}
-        <div style={{ marginTop: '24px' }}>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#94a3b8', marginBottom: '8px' }}>
+        <div className="console-wrapper">
+          <label className="console-label" htmlFor="academic-console-logs">
             Consola de gRPC & API Logs:
           </label>
-          <pre style={{
-            backgroundColor: '#090d16',
-            color: '#10b981',
-            padding: '16px',
-            borderRadius: '8px',
-            overflowX: 'auto',
-            fontSize: '13px',
-            border: '1px solid #1e293b',
-            margin: 0,
-            whiteSpace: 'pre-wrap',
-            fontFamily: '"Fira Code", monospace',
-            maxHeight: '200px'
-          }}>
+          <pre className="hacker-console" id="academic-console-logs">
             {logs}
           </pre>
         </div>

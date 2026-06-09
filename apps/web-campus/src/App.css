@@ -1,0 +1,375 @@
+.campus-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Fila Superior: Monitor de Salud del Gateway & Registro */
+.campus-top-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .campus-top-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.campus-card {
+  background: rgba(10, 20, 36, 0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+}
+
+.card-title-indigo {
+  margin: 0 0 20px 0;
+  font-size: 17px;
+  color: #818cf8;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.3px;
+}
+
+.card-title-purple {
+  margin: 0 0 16px 0;
+  font-size: 17px;
+  color: #c084fc;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.3px;
+}
+
+/* Estado del Gateway */
+.gateway-row-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--glass-border);
+  padding-bottom: 12px;
+}
+
+.gateway-status-dot-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gateway-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  transition: var(--transition-smooth);
+}
+
+.gateway-status-dot.online {
+  background-color: #10b981;
+  box-shadow: 0 0 10px #10b981;
+}
+
+.gateway-status-dot.offline {
+  background-color: #ef4444;
+  box-shadow: 0 0 10px #ef4444;
+}
+
+.gateway-status-dot.checking {
+  background-color: #eab308;
+  box-shadow: 0 0 10px #eab308;
+}
+
+.gateway-status-text {
+  font-weight: 800;
+  font-size: 13.5px;
+  letter-spacing: 0.5px;
+}
+
+.gateway-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gateway-detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.gateway-detail-key {
+  color: var(--text-muted);
+}
+
+.gateway-detail-val {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.gateway-detail-val.active-green {
+  color: #34d399;
+}
+
+.gateway-detail-val.active-cyan {
+  color: #22d3ee;
+}
+
+.gateway-status-placeholder {
+  padding: 18px;
+  background-color: rgba(5, 11, 20, 0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.gateway-timestamp {
+  margin-top: auto;
+  padding-top: 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+/* Registro de Microservicios */
+.services-scroll-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  max-height: 200px;
+  padding-right: 6px;
+}
+
+.service-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background-color: rgba(5, 11, 20, 0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  transition: var(--transition-smooth);
+}
+
+.service-item-row:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.service-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+}
+
+.service-desc {
+  color: var(--text-muted);
+  font-size: 10.5px;
+  margin-top: 2px;
+}
+
+.service-status-chip {
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  font-size: 9.5px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ==========================================
+   DECODIFICADOR JWT
+   ========================================== */
+.token-decoder-section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.token-decoder-subtitle {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.token-error-banner {
+  padding: 12px 18px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: #f87171;
+}
+
+.token-info-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Badges superiores */
+.token-badges-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 140px;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .token-badges-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.token-badge-card {
+  background-color: rgba(5, 11, 20, 0.4);
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+}
+
+.badge-card-lbl {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.badge-card-val {
+  font-size: 14px;
+  fontWeight: 700;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.badge-card-val.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.token-status-indicator {
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 120px;
+  font-weight: 800;
+}
+
+.token-status-indicator.active {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #34d399;
+}
+
+.token-status-indicator.expired {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+}
+
+/* Visor inferior de roles e JSON */
+.token-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .token-details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.roles-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.roles-section-lbl {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.roles-flex {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.role-chip {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  font-size: 12.5px;
+  color: #a5b4fc;
+  font-weight: 600;
+}
+
+.json-visor-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.json-visor-lbl {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.token-json-console {
+  background-color: #030712;
+  color: #cbd5e1;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  overflow: auto;
+  max-height: 200px;
+  border: 1px solid var(--glass-border);
+  margin: 0;
+  font-family: var(--font-mono);
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+  line-height: 1.5;
+  position: relative;
+}
+
+.token-json-console::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background-size: 100% 4px;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0.2;
+}
