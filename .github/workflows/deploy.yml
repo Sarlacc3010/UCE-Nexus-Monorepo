@@ -25,12 +25,14 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           
           # Determinar IPs según la rama (QA o Main/Production)
-          if [ "${{ github.ref_name }}" = "main" ]; then
+           if [ "${{ github.ref_name }}" = "main" ]; then
             echo "DEPLOY_ENV=Production" >> $GITHUB_ENV
+            echo "DOCKER_HUB_TAG=prod" >> $GITHUB_ENV
             echo "BASTION_IP=${{ secrets.PROD_BASTION_IP }}" >> $GITHUB_ENV
             echo "APP_PRIVATE_IP=${{ secrets.PROD_APP_PRIVATE_IP }}" >> $GITHUB_ENV
           else
             echo "DEPLOY_ENV=QA" >> $GITHUB_ENV
+            echo "DOCKER_HUB_TAG=qa" >> $GITHUB_ENV
             echo "BASTION_IP=${{ secrets.QA_BASTION_IP }}" >> $GITHUB_ENV
             echo "APP_PRIVATE_IP=${{ secrets.QA_APP_PRIVATE_IP }}" >> $GITHUB_ENV
           fi
@@ -104,16 +106,14 @@ jobs:
       # ==========================================
       - name: Deploy Containers on App Server
         run: |
-          # 1. Autenticar Docker en la máquina remota con el registro GHCR
-          ssh app-server "echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u ${{ github.actor }} --password-stdin"
+          # 1. Autenticar Docker en la máquina remota con el registro Docker Hub
+          ssh app-server "echo '${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}' | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin"
           
           # 2. Descargar últimas imágenes y levantar servicios
-          # Convertir repository_owner a minúsculas
-          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           ssh app-server "
             cd /home/ubuntu/app && \
-            REGISTRY_OWNER=${OWNER_LOWER} docker-compose -f docker-compose.prod.yml pull && \
-            REGISTRY_OWNER=${OWNER_LOWER} docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            DOCKER_HUB_USER=${{ secrets.DOCKER_HUB_USERNAME }} IMAGE_TAG=${{ env.DOCKER_HUB_TAG }} docker-compose -f docker-compose.prod.yml pull && \
+            DOCKER_HUB_USER=${{ secrets.DOCKER_HUB_USERNAME }} IMAGE_TAG=${{ env.DOCKER_HUB_TAG }} docker-compose -f docker-compose.prod.yml up -d --remove-orphans
           "
           
           # 3. Limpieza de imágenes huérfanas/antiguas para liberar espacio
