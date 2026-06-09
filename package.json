@@ -1,0 +1,22 @@
+{
+  "name": "uce-nexus-monorepo",
+  "private": true,
+  "packageManager": "npm@11.11.0",
+  "version": "1.0.0",
+  "description": "Smart-Campus Ecosystem for UCE - Monorepo",
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "node scripts/dev.js",
+    "dev:local": "turbo run dev:local",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0"
+  }
+}
