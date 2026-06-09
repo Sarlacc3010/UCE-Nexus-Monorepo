@@ -85,3 +85,18 @@ terraform.exe
 *.dylib
 *.test
 *.out
+
+# Go & Rust build directories
+target/
+**/target/
+
+# Python bytecode and virtual environments
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+**/venv/
+**/.venv/
