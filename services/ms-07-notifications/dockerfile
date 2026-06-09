@@ -1,0 +1,28 @@
+# ==========================================
+# Dockerfile para ms-07-notifications (FastAPI + RabbitMQ)
+# ==========================================
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Instalar herramientas básicas del sistema (ej: curl para healthchecks)
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar manifiesto e instalar dependencias de Python
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar el script principal de la aplicación
+COPY main.py .
+
+# Exponer el puerto de la API web
+EXPOSE 8000
+
+# Seguridad: Ejecutar bajo un usuario no-root (DevSecOps)
+RUN useradd -u 8888 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Comando de ejecución
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

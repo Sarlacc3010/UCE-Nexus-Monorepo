@@ -2,12 +2,42 @@ version: '3.8'
 
 services:
   # ==========================================
+  # 0. MICRO-FRONTENDS (Servidos por Nginx)
+  # ==========================================
+  web-host:
+    image: ${DOCKER_HUB_USER:-abel3010}/web-host:${IMAGE_TAG:-latest}
+    container_name: nexus-web-host
+    restart: unless-stopped
+    ports:
+      - "5000:80"
+    networks:
+      - nexus-network
+
+  web-academic:
+    image: ${DOCKER_HUB_USER:-abel3010}/web-academic:${IMAGE_TAG:-latest}
+    container_name: nexus-web-academic
+    restart: unless-stopped
+    ports:
+      - "5001:80"
+    networks:
+      - nexus-network
+
+  web-campus:
+    image: ${DOCKER_HUB_USER:-abel3010}/web-campus:${IMAGE_TAG:-latest}
+    container_name: nexus-web-campus
+    restart: unless-stopped
+    ports:
+      - "5002:80"
+    networks:
+      - nexus-network
+
+  # ==========================================
   # 1. MICROSERVICIOS DE LA APLICACIÓN
   # ==========================================
   
   # MS-01: API Gateway (Node.js/TypeScript)
   ms-01-gateway:
-    image: ghcr.io/${REGISTRY_OWNER:-uce-nexus}/ms-01-gateway:latest
+    image: ${DOCKER_HUB_USER:-abel3010}/ms-01-gateway:${IMAGE_TAG:-latest}
     container_name: nexus-ms-01-gateway
     restart: unless-stopped
     ports:
@@ -25,7 +55,7 @@ services:
 
   # MS-06: Booking Engine (Go gRPC)
   ms-06-booking:
-    image: ghcr.io/${REGISTRY_OWNER:-uce-nexus}/ms-06-booking:latest
+    image: ${DOCKER_HUB_USER:-abel3010}/ms-06-booking:${IMAGE_TAG:-latest}
     container_name: nexus-ms-06-booking
     restart: unless-stopped
     ports:
@@ -47,6 +77,36 @@ services:
       - mongodb
       - redis-cache
       - kafka
+      - rabbitmq
+    networks:
+      - nexus-network
+
+  # MS-11: Catalog Service (Rust gRPC)
+  ms-11-catalog:
+    image: ${DOCKER_HUB_USER:-abel3010}/ms-11-catalog:${IMAGE_TAG:-latest}
+    container_name: nexus-ms-11-catalog
+    restart: unless-stopped
+    ports:
+      - "50052:50052"
+    environment:
+      - PORT=50052
+      - DATABASE_URL=postgres://catalog_user:catalog_password@postgres-catalog:5432/uce_catalog_dev
+    depends_on:
+      - postgres-catalog
+    networks:
+      - nexus-network
+
+  # MS-07: Notifications Service (Python FastAPI / RabbitMQ Consumer)
+  ms-07-notifications:
+    image: ${DOCKER_HUB_USER:-abel3010}/ms-07-notifications:${IMAGE_TAG:-latest}
+    container_name: nexus-ms-07-notifications
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672/
+      - PYTHONUNBUFFERED=1
+    depends_on:
       - rabbitmq
     networks:
       - nexus-network
@@ -103,6 +163,21 @@ services:
       - pg-app-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - nexus-network
+
+  postgres-catalog:
+    image: postgres:15-alpine
+    container_name: nexus-db-catalog
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: catalog_user
+      POSTGRES_PASSWORD: catalog_password
+      POSTGRES_DB: uce_catalog_dev
+    volumes:
+      - pg-catalog-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
     networks:
       - nexus-network
 
@@ -194,6 +269,8 @@ volumes:
   pg-iam-data:
     driver: local
   pg-app-data:
+    driver: local
+  pg-catalog-data:
     driver: local
   mongo-data:
     driver: local

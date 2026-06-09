@@ -53,6 +53,18 @@ services:
     networks:
       - nexus-network
 
+  postgres-catalog:
+    image: postgres:15-alpine
+    container_name: nexus-db-catalog
+    environment:
+      POSTGRES_USER: catalog_user
+      POSTGRES_PASSWORD: catalog_password
+      POSTGRES_DB: uce_catalog_dev
+    ports:
+      - "5433:5432"
+    networks:
+      - nexus-network
+
   mongodb:
     image: mongo:7.0
     container_name: nexus-mongo

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package catalog;
+
+// Opción para habilitar compilación de paquetes en Go
+option go_package = "uce-nexus/ms-11-catalog/pb";
+
+// Servicio sincrónico de catálogo expuesto por el microservicio ms-11-catalog
+service CatalogService {
+  // Obtiene los detalles de un laboratorio específico
+  rpc GetLaboratory (GetLaboratoryRequest) returns (LaboratoryResponse);
+
+  // Consulta la disponibilidad del recurso antes de intentar la reserva
+  rpc CheckAvailability (CheckAvailabilityRequest) returns (AvailabilityResponse);
+}
+
+message GetLaboratoryRequest {
+  string code = 1; // Ej: "LAB-Cisco-01"
+}
+
+message CheckAvailabilityRequest {
+  string code = 1; // Ej: "LAB-Cisco-01"
+  string date = 2; // Formato: AAAA-MM-DD (Ej: "2026-06-05")
+}
+
+message LaboratoryResponse {
+  string id = 1;
+  string code = 2;               // Ej: "LAB-Cisco-01"
+  string name = 3;               // Ej: "Laboratorio de Cisco & Redes"
+  string location = 4;           // Ej: "Bloque B, Piso 3, Aula 302"
+  int32 capacity = 5;            // Capacidad de alumnos
+  repeated string equipment = 6;  // Lista de equipamiento (ej: ["Routers", "Switches"])
+  bool is_active = 7;
+}
+
+message AvailabilityResponse {
+  string code = 1;
+  string date = 2;
+  bool is_available = 3;
+  string message = 4;            // Información adicional
+}
