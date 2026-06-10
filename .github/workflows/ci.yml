@@ -71,11 +71,48 @@ jobs:
               - 'apps/web-campus/**'
 
   # ==========================================
+  # 2.5. CI: Pruebas Unitarias
+  # ==========================================
+  run-tests:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Protobuf Compiler (protoc)
+        run: |
+          sudo apt-get update && sudo apt-get install -y protobuf-compiler
+          protoc --version
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Install Monorepo Dependencies
+        run: npm ci
+
+      - name: Run Unit Tests (Turbo)
+        run: npm run test
+
+      - name: Run Rust Tests (Catalog)
+        run: |
+          cd services/ms-11-catalog
+          cargo test
+
+  # ==========================================
   # 3. Build & Push: API Gateway (MS-01)
   # ==========================================
   build-gateway:
     name: Build & Push Gateway (MS-01)
-    needs: [changes-detector, secrets-scan]
+    needs: [changes-detector, secrets-scan, run-tests]
     if: ${{ needs.changes-detector.outputs.gateway == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
     runs-on: ubuntu-latest
     steps:
@@ -118,7 +155,7 @@ jobs:
   # ==========================================
   build-booking:
     name: Build & Push Booking (MS-06)
-    needs: [changes-detector, secrets-scan]
+    needs: [changes-detector, secrets-scan, run-tests]
     if: ${{ needs.changes-detector.outputs.booking == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
     runs-on: ubuntu-latest
     steps:
@@ -161,7 +198,7 @@ jobs:
   # ==========================================
   build-notifications:
     name: Build & Push Notifications (MS-07)
-    needs: [changes-detector, secrets-scan]
+    needs: [changes-detector, secrets-scan, run-tests]
     if: ${{ needs.changes-detector.outputs.notifications == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
     runs-on: ubuntu-latest
     steps:
@@ -204,7 +241,7 @@ jobs:
   # ==========================================
   build-catalog:
     name: Build & Push Catalog (MS-11)
-    needs: [changes-detector, secrets-scan]
+    needs: [changes-detector, secrets-scan, run-tests]
     if: ${{ needs.changes-detector.outputs.catalog == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
     runs-on: ubuntu-latest
     steps:
@@ -247,7 +284,7 @@ jobs:
   # ==========================================
   build-web-host:
     name: Build & Push Web Host
-    needs: [changes-detector, secrets-scan]
+    needs: [changes-detector, secrets-scan, run-tests]
     if: ${{ needs.changes-detector.outputs.web_host == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
     runs-on: ubuntu-latest
     steps:
@@ -290,7 +327,7 @@ jobs:
   # ==========================================
   build-web-academic:
     name: Build & Push Web Academic
-    needs: [changes-detector, secrets-scan]
+    needs: [changes-detector, secrets-scan, run-tests]
     if: ${{ needs.changes-detector.outputs.web_academic == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
     runs-on: ubuntu-latest
     steps:
@@ -333,7 +370,7 @@ jobs:
   # ==========================================
   build-web-campus:
     name: Build & Push Web Campus
-    needs: [changes-detector, secrets-scan]
+    needs: [changes-detector, secrets-scan, run-tests]
     if: ${{ needs.changes-detector.outputs.web_campus == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
     runs-on: ubuntu-latest
     steps:
