@@ -23,22 +23,23 @@ jobs:
       - name: Configure SSH and Jump Host (Bastion)
         run: |
           mkdir -p ~/.ssh
-          # Escribir la llave SSH privada desde los secretos de GitHub
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
           
-          # Determinar IPs según la rama (QA o Main/Production)
-           if [ "${{ github.ref_name }}" = "main" ]; then
+          # Determinar variables según la rama (QA o Main/Production)
+          if [ "${{ github.ref_name }}" = "main" ]; then
             echo "DEPLOY_ENV=Production" >> $GITHUB_ENV
             echo "DOCKER_HUB_TAG=prod" >> $GITHUB_ENV
             echo "BASTION_IP=${{ secrets.PROD_BASTION_IP }}" >> $GITHUB_ENV
             echo "APP_PRIVATE_IP=${{ secrets.PROD_APP_PRIVATE_IP }}" >> $GITHUB_ENV
+            echo "${{ secrets.PROD_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           else
             echo "DEPLOY_ENV=QA" >> $GITHUB_ENV
             echo "DOCKER_HUB_TAG=qa" >> $GITHUB_ENV
             echo "BASTION_IP=${{ secrets.QA_BASTION_IP }}" >> $GITHUB_ENV
             echo "APP_PRIVATE_IP=${{ secrets.QA_APP_PRIVATE_IP }}" >> $GITHUB_ENV
+            echo "${{ secrets.QA_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           fi
+          
+          chmod 600 ~/.ssh/id_rsa
 
       - name: Generate SSH SSH Config file
         run: |
