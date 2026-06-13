@@ -138,8 +138,8 @@ function App() {
         <div className="login-card animate-slide-up">
           <div className="login-header">
             <div className="login-logo">U</div>
-            <h1 className="login-title">SIU</h1>
-            <span className="login-subtitle">Sistema Integrado Universitario</span>
+            <h1 className="login-title">SIIU</h1>
+            <span className="login-subtitle">Sistema Integrado de Información Universitaria</span>
           </div>
 
           <form onSubmit={handleLogin}>
@@ -190,42 +190,35 @@ function App() {
   return (
     <div className="dashboard-layout animate-fade-in" id="dashboard-shell">
       
-      {/* 1. Barra Lateral de Navegación (Sidebar SIU) */}
+      {/* 1. Barra Lateral de Navegación (Sidebar SIIU) */}
       <aside className="sidebar siu-sidebar">
         {/* Logo */}
         <div className="sidebar-logo-section">
-          <h2>SIU</h2>
-          <span className="sidebar-subtitle">Sistema Integrado Universitario</span>
+          <h2>SIIU</h2>
+          <span className="sidebar-subtitle">Sistema Integrado de Información Universitaria</span>
         </div>
 
         {/* Links de navegación */}
         <nav className="sidebar-nav">
           <button onClick={() => setActiveTab('dashboard')} className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}>
-            <span className="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></span>
             Dashboard
           </button>
           <button onClick={() => setActiveTab('matriculacion')} className={`nav-item ${activeTab === 'matriculacion' ? 'active' : ''}`}>
-            <span className="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg></span>
             Matriculación (Reservas)
           </button>
           <button onClick={() => setActiveTab('calificaciones')} className={`nav-item ${activeTab === 'calificaciones' ? 'active' : ''}`}>
-            <span className="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span>
             Calificaciones
           </button>
           <button onClick={() => setActiveTab('pagos')} className={`nav-item ${activeTab === 'pagos' ? 'active' : ''}`}>
-            <span className="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg></span>
             Pagos
           </button>
           <button onClick={() => setActiveTab('biblioteca')} className={`nav-item ${activeTab === 'biblioteca' ? 'active' : ''}`}>
-            <span className="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></span>
             Biblioteca
           </button>
           <button onClick={() => setActiveTab('notificaciones')} className={`nav-item ${activeTab === 'notificaciones' ? 'active' : ''}`}>
-            <span className="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></span>
             Notificaciones
           </button>
           <button onClick={() => setActiveTab('gateway')} className={`nav-item ${activeTab === 'gateway' ? 'active' : ''}`}>
-            <span className="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></span>
             Control de IAM / Gateway
           </button>
         </nav>
@@ -249,7 +242,6 @@ function App() {
             <p>Viernes, 12 de Junio de 2026</p>
           </div>
           <button className="btn-notifications">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
             Ver Notificaciones
           </button>
         </header>

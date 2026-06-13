@@ -111,7 +111,7 @@ function App() {
         {/* Panel de Estado del Gateway */}
         <div className="campus-card" id="gateway-health-card">
           <h3 className="card-title-indigo">
-            🛡️ Consola del API Gateway (MS-01)
+            Consola del API Gateway (MS-01)
           </h3>
           
           <div className="gateway-row-item">
@@ -159,7 +159,7 @@ function App() {
         {/* Registro del Monorepo */}
         <div className="campus-card" id="services-registry-card">
           <h3 className="card-title-purple">
-            📦 Registro de Microservicios
+            Registro de Microservicios
           </h3>
           
           <div className="services-scroll-container">
@@ -188,7 +188,7 @@ function App() {
       {/* 2. Sección Inferior: Decodificador JWT */}
       <div className="campus-card token-decoder-section" id="jwt-inspector-card">
         <h3 className="card-title-purple">
-          🗝️ Inspector de Identidad (Token de Sesión Activa)
+          Inspector de Identidad (Token de Sesión Activa)
         </h3>
         <p className="token-decoder-subtitle">
           Este panel inspecciona los claims de seguridad del token de tu sesión de Keycloak activa en el portal, sin exponer el texto del token directamente.

@@ -1,6 +1,6 @@
 # UCE-Nexus Monorepo 🚀
 
-Integrated University System (SIU) based on a modern **Polyglot Microservices** and **Micro-Frontends** architecture.
+Integrated University Information System (SIIU) based on a modern **Polyglot Microservices** and **Micro-Frontends** architecture.
 
 This project has been designed with a focus on scalability, high availability, centralized JWT security, and separation of concerns through automated deployments on AWS.
 
@@ -10,7 +10,7 @@ The repository is managed as a monorepo using **Turborepo** for efficient script
 
 ### Micro-Frontends (MFE)
 Developed in **React.js + Vite** integrating Module Federation:
-- `web-host` (Shell): Master shell of the portal. Controls the main layout (Sidebar, SIU Header) and dynamic routing of remote modules. Runs on port `5000`.
+- `web-host` (Shell): Master shell of the portal. Controls the main layout (Sidebar, SIIU Header) and dynamic routing of remote modules. Runs on port `5000`.
 - `web-academic` (Academic Module): Contains the main student Dashboard (Schedule, Progress, Tasks) and the Laboratory Booking system. Runs on port `5001`.
 - `web-campus` (Gateway Module): Contains the service health monitoring view and active JWT token inspector. Runs on port `5002`.
 
