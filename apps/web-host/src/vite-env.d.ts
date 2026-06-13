@@ -1,5 +1,11 @@
 /// <reference types="vite/client" />
 
+declare module 'academic/DashboardApp' {
+  import { ComponentType } from 'react';
+  const DashboardApp: ComponentType;
+  export default DashboardApp;
+}
+
 declare module 'academic/BookingApp' {
   import { ComponentType } from 'react';
   const BookingApp: ComponentType;
