@@ -6,6 +6,9 @@ on:
       - qa
       - main
 
+env:
+  DOCKER_HUB_TAG: qa
+
 jobs:
   deploy:
     name: Deploy to EC2 via Bastion Jump
