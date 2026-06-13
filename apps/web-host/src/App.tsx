@@ -2,11 +2,12 @@ import { lazy, Suspense, useState, useEffect } from 'react'
 import './App.css'
 
 // Importación dinámica a través de la red (Vite Module Federation)
+const DashboardApp = lazy(() => import('academic/DashboardApp'))
 const AcademicApp = lazy(() => import('academic/BookingApp'))
 const GatewayApp = lazy(() => import('gateway/GatewayApp'))
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'academic' | 'gateway'>('academic');
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [token, setToken] = useState<string>(localStorage.getItem('uce_token') || '');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -135,41 +136,21 @@ function App() {
         <div className="login-ambient-blob-2"></div>
         
         <div className="login-card animate-slide-up">
-          {/* Logo / Cabecera */}
           <div className="login-header">
             <div className="login-logo">U</div>
-            <h1 className="login-title">UCE-Nexus</h1>
-            <span className="login-subtitle">Inicia sesión para acceder al portal inteligente</span>
+            <h1 className="login-title">SIIU</h1>
+            <span className="login-subtitle">Sistema Integrado de Información Universitaria</span>
           </div>
 
-          {/* Formulario */}
           <form onSubmit={handleLogin}>
             <div className="form-group">
-              <label className="form-label" htmlFor="input-username">
-                Usuario de Keycloak
-              </label>
-              <input
-                id="input-username"
-                type="text"
-                placeholder="ej. estudiante1"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="form-input"
-              />
+              <label className="form-label" htmlFor="input-username">Usuario Institucional</label>
+              <input id="input-username" type="text" placeholder="ej. juan.sanchez" value={username} onChange={(e) => setUsername(e.target.value)} className="form-input" />
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="input-password">
-                Contraseña
-              </label>
-              <input
-                id="input-password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="form-input"
-              />
+              <label className="form-label" htmlFor="input-password">Contraseña</label>
+              <input id="input-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="form-input" />
             </div>
 
             {loginError && (
@@ -178,13 +159,8 @@ function App() {
               </div>
             )}
 
-            <button
-              id="btn-login-submit"
-              type="submit"
-              disabled={isLoggingIn}
-              className="login-button"
-            >
-              {isLoggingIn ? 'Autenticando en Keycloak...' : 'Ingresar al Portal'}
+            <button id="btn-login-submit" type="submit" disabled={isLoggingIn} className="login-button">
+              {isLoggingIn ? 'Autenticando...' : 'Ingresar'}
             </button>
           </form>
         </div>
@@ -192,89 +168,95 @@ function App() {
     );
   }
 
-  // Si está autenticado, renderizar el Dashboard Principal
+  // Helper para renderizar contenido basado en la tab seleccionada
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <DashboardApp />;
+      case 'matriculacion':
+        return <AcademicApp />;
+      case 'gateway':
+        return <GatewayApp />;
+      default:
+        return (
+          <div className="coming-soon-container">
+            <h3>Módulo en construcción</h3>
+            <p>Este módulo será implementado próximamente.</p>
+          </div>
+        );
+    }
+  };
+
   return (
     <div className="dashboard-layout animate-fade-in" id="dashboard-shell">
-      <div className="main-ambient-light"></div>
       
-      {/* 1. Barra Lateral de Navegación (Sidebar) */}
-      <aside className="sidebar">
+      {/* 1. Barra Lateral de Navegación (Sidebar SIIU) */}
+      <aside className="sidebar siu-sidebar">
         {/* Logo */}
         <div className="sidebar-logo-section">
-          <div className="sidebar-logo">U</div>
-          <div className="sidebar-title-container">
-            <h2>UCE-Nexus</h2>
-            <span className="sidebar-subtitle">Portal de Control</span>
-          </div>
+          <h2>SIIU</h2>
+          <span className="sidebar-subtitle">Sistema Integrado de Información Universitaria</span>
         </div>
 
         {/* Links de navegación */}
         <nav className="sidebar-nav">
-          <button
-            id="nav-tab-academic"
-            onClick={() => setActiveTab('academic')}
-            className={`nav-item ${activeTab === 'academic' ? 'active-academic' : ''}`}
-          >
-            <span className="nav-item-icon">🔬</span>
-            Reserva de Laboratorios
+          <button onClick={() => setActiveTab('dashboard')} className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}>
+            Dashboard
           </button>
-
-          <button
-            id="nav-tab-gateway"
-            onClick={() => setActiveTab('gateway')}
-            className={`nav-item ${activeTab === 'gateway' ? 'active-gateway' : ''}`}
-          >
-            <span className="nav-item-icon">🛡️</span>
-            Control de Gateway & IAM
+          <button onClick={() => setActiveTab('matriculacion')} className={`nav-item ${activeTab === 'matriculacion' ? 'active' : ''}`}>
+            Matriculación (Reservas)
+          </button>
+          <button onClick={() => setActiveTab('calificaciones')} className={`nav-item ${activeTab === 'calificaciones' ? 'active' : ''}`}>
+            Calificaciones
+          </button>
+          <button onClick={() => setActiveTab('pagos')} className={`nav-item ${activeTab === 'pagos' ? 'active' : ''}`}>
+            Pagos
+          </button>
+          <button onClick={() => setActiveTab('biblioteca')} className={`nav-item ${activeTab === 'biblioteca' ? 'active' : ''}`}>
+            Biblioteca
+          </button>
+          <button onClick={() => setActiveTab('notificaciones')} className={`nav-item ${activeTab === 'notificaciones' ? 'active' : ''}`}>
+            Notificaciones
+          </button>
+          <button onClick={() => setActiveTab('gateway')} className={`nav-item ${activeTab === 'gateway' ? 'active' : ''}`}>
+            Control de IAM / Gateway
           </button>
         </nav>
 
-        {/* Botón de Cerrar Sesión y versión */}
-        <div className="sidebar-footer">
-          <button
-            id="btn-logout"
-            onClick={handleLogout}
-            className="logout-button"
-          >
-            <span>🚪</span> Cerrar Sesión
-          </button>
-          <div className="app-version">
-            UCE-Nexus MFA Shell v1.1.0
+        {/* User Profile */}
+        <div className="sidebar-user-profile" onClick={handleLogout} title="Cerrar sesión">
+          <div className="user-avatar">JS</div>
+          <div className="user-info">
+            <span className="user-name">Juan Sánchez</span>
+            <span className="user-role">Estudiante</span>
           </div>
         </div>
       </aside>
 
       {/* 2. Contenido Principal */}
       <main className="main-content">
-        {/* Cabecera */}
-        <header className="main-header">
-          <div className="header-title-section">
-            <h1>
-              {activeTab === 'academic' ? 'Módulo Académico' : 'Módulo de Seguridad e Identidad'}
-            </h1>
-            <p className="header-subtitle">
-              {activeTab === 'academic' 
-                ? 'Gestiona tus reservas de laboratorio interactuando con el motor de Go gRPC.' 
-                : 'Monitorea el estado del API Gateway (Node.js) y audita tokens JWT de Keycloak.'}
-            </p>
+        {/* Cabecera SIU */}
+        <header className="siu-header">
+          <div className="header-greeting">
+            <h1>¡Bienvenido, Juan!</h1>
+            <p>Viernes, 12 de Junio de 2026</p>
           </div>
-          <div className="session-badge" id="session-status-badge">
-            <span className="session-indicator"></span>
-            Sesión Activa
-          </div>
+          <button className="btn-notifications">
+            Ver Notificaciones
+          </button>
         </header>
 
         {/* Contenedor MFE */}
         <section className="mfe-viewport-container">
           <Suspense fallback={
             <div className="mfe-loader">
-              <div className={`loader-spinner animate-spin-loader ${activeTab === 'academic' ? 'academic-theme' : 'gateway-theme'}`}></div>
+              <div className="loader-spinner animate-spin-loader"></div>
               <span className="loader-text">
-                Cargando Módulo {activeTab === 'academic' ? 'Académico (Puerto 5001)' : 'Gateway (Puerto 5002)'} por la red...
+                Cargando Módulo Remoto...
               </span>
             </div>
           }>
-            {activeTab === 'academic' ? <AcademicApp /> : <GatewayApp />}
+            {renderContent()}
           </Suspense>
         </section>
       </main>

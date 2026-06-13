@@ -30,7 +30,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalar únicamente dependencias de producción (seguridad y ligereza)
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copiar el código compilado desde la etapa de construcción
 COPY --from=builder /app/dist ./dist

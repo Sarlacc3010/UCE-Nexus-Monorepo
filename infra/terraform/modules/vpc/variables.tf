@@ -18,5 +18,11 @@ variable "vpc_cidr" {
 variable "subnet_cidr" {
   type        = string
   default     = "10.0.1.0/24"
-  description = "Rango de red CIDR para la Subred pública"
+  description = "Rango de red CIDR para la Subred pública A"
+}
+
+variable "subnet_b_cidr" {
+  type        = string
+  default     = "10.0.2.0/24"
+  description = "Rango de red CIDR para la Subred pública B (Requerida por ALB)"
 }
