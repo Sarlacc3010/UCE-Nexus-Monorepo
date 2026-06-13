@@ -1,52 +1,52 @@
 # UCE-Nexus Monorepo 🚀
 
-Sistema Integrado Universitario (SIU) basado en una arquitectura moderna de **Microservicios Políglotas** y **Micro-Frontends**.
+Integrated University System (SIU) based on a modern **Polyglot Microservices** and **Micro-Frontends** architecture.
 
-Este proyecto ha sido diseñado con enfoque en escalabilidad, alta disponibilidad, seguridad JWT centralizada y separación de responsabilidades a través de despliegues automatizados en AWS.
+This project has been designed with a focus on scalability, high availability, centralized JWT security, and separation of concerns through automated deployments on AWS.
 
-## 🏗️ Arquitectura del Proyecto
+## 🏗️ Project Architecture
 
-El repositorio está gestionado como un monorepo utilizando **Turborepo** para orquestación eficiente de scripts y cachés locales.
+The repository is managed as a monorepo using **Turborepo** for efficient script orchestration and local caching.
 
 ### Micro-Frontends (MFE)
-Desarrollados en **React.js + Vite** integrando Module Federation:
-- `web-host` (Shell): Caparazón maestro del portal. Controla el layout principal (Sidebar, Header SIU) y el enrutamiento dinámico de los módulos remotos. Corre en el puerto `5000`.
-- `web-academic` (Módulo Académico): Contiene el Dashboard principal de los estudiantes (Horario, Progreso, Tareas) y el sistema de Reserva de Laboratorios. Corre en el puerto `5001`.
-- `web-campus` (Módulo Gateway): Contiene la vista de monitoreo del estado de los servicios e inspector del token JWT activo. Corre en el puerto `5002`.
+Developed in **React.js + Vite** integrating Module Federation:
+- `web-host` (Shell): Master shell of the portal. Controls the main layout (Sidebar, SIU Header) and dynamic routing of remote modules. Runs on port `5000`.
+- `web-academic` (Academic Module): Contains the main student Dashboard (Schedule, Progress, Tasks) and the Laboratory Booking system. Runs on port `5001`.
+- `web-campus` (Gateway Module): Contains the service health monitoring view and active JWT token inspector. Runs on port `5002`.
 
-### Microservicios (Backend)
-Desarrollados en múltiples lenguajes para aprovechar las fortalezas de cada ecosistema:
-- **`ms-01-gateway` (Node.js/Express):** API Edge Gateway que actúa como proxy inverso y Middleware de validación JWT (Keycloak) antes de que las peticiones toquen los servicios internos.
-- **`ms-06-booking` (Go/gRPC):** Motor de reservas ultra-rápido diseñado para alto rendimiento.
-- **`ms-07-notifications` (Python/FastAPI):** Servicio encargado del envío asíncrono de alertas y correos.
-- **`ms-04-payment` / `ms-05-payment` (Rust):** Microservicios de catálogo y pagos orientados a lectura/escritura (patrón CQRS).
+### Microservices (Backend)
+Developed in multiple languages to leverage the strengths of each ecosystem:
+- **`ms-01-gateway` (Node.js/Express):** API Edge Gateway acting as a reverse proxy and JWT validation Middleware (Keycloak) before requests reach internal services.
+- **`ms-06-booking` (Go/gRPC):** Ultra-fast booking engine designed for high performance.
+- **`ms-07-notifications` (Python/FastAPI):** Service responsible for asynchronous alerts and email delivery.
+- **`ms-04-payment` / `ms-05-payment` (Rust):** Catalog and payment microservices oriented towards read/write operations (CQRS pattern).
 
-## 🌩️ Infraestructura y Despliegue (AWS)
-Toda la infraestructura está declarada como código (IaC) usando **Terraform** (`infra/terraform`).
+## 🌩️ Infrastructure & Deployment (AWS)
+All infrastructure is declared as code (IaC) using **Terraform** (`infra/terraform`).
 
-**Características Clave:**
-- **Alta Disponibilidad:** Uso de `aws_autoscaling_group` y `aws_lb` (Application Load Balancer) a través de subredes públicas A y B para mitigar caídas de zona.
-- **Zero-Downtime Deployments:** Políticas de ciclo de vida de Terraform configuradas en Blue/Green (`create_before_destroy = true`).
-- **CI/CD Nativo sin Ansible:** No dependemos de herramientas de aprovisionamiento de terceros. Terraform inyecta un script `user_data.sh` en el arranque de las instancias EC2 para preparar el entorno Docker. Los despliegues se ejecutan directamente mediante conexiones SSH tunelizadas por un Bastion Host a través de **GitHub Actions**.
+**Key Features:**
+- **High Availability:** Use of `aws_autoscaling_group` and `aws_lb` (Application Load Balancer) across public subnets A and B to mitigate availability zone failures.
+- **Zero-Downtime Deployments:** Terraform lifecycle policies configured for Blue/Green deployments (`create_before_destroy = true`).
+- **Native CI/CD without Ansible:** We do not rely on third-party provisioning tools. Terraform injects a `user_data.sh` script during EC2 instance startup to prepare the Docker environment. Deployments are executed directly via SSH connections tunneled through a Bastion Host using **GitHub Actions**.
 
-## 🚀 Cómo ejecutar localmente
+## 🚀 How to Run Locally
 
-1. **Instalar dependencias globales:**
+1. **Install global dependencies:**
    ```bash
    npm install
    ```
 
-2. **Levantar todos los micro-frontends simultáneamente:**
-   Gracias a Turborepo, puedes levantar el entorno de desarrollo completo con:
+2. **Start all micro-frontends simultaneously:**
+   Thanks to Turborepo, you can spin up the entire development environment with:
    ```bash
    npx turbo run dev
    ```
 
-3. **Acceder a la aplicación:**
-   Abre tu navegador en `http://localhost:5000`.
+3. **Access the application:**
+   Open your browser at `http://localhost:5000`.
 
-## 🛡️ Pruebas Unitarias
-Cada microservicio mantiene sus propias suites de testing. Para ejecutar las pruebas en cascada en todo el monorepo:
+## 🛡️ Unit Testing
+Each microservice maintains its own testing suites. To cascade tests across the entire monorepo:
 ```bash
 npx turbo run test
 ```
