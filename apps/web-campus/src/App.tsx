@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import './App.css'
 
 interface GatewayHealth {
   status: string;
@@ -104,114 +105,78 @@ function App() {
   ];
 
   return (
-    <div style={{
-      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      color: '#f8fafc',
-      maxWidth: '900px',
-      margin: '0 auto',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '24px'
-    }}>
-      {/* 1. Fila Superior: Monitor de Salud del Gateway */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
+    <div className="campus-container animate-fade-in" id="campus-panel">
+      {/* 1. Fila Superior: Monitor de Salud del Gateway & Registro */}
+      <div className="campus-top-row">
         {/* Panel de Estado del Gateway */}
-        <div style={{
-          backgroundColor: '#1e293b',
-          borderRadius: '12px',
-          padding: '20px',
-          border: '1px solid #334155',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-        }}>
-          <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#a855f7', fontWeight: 700 }}>
-            🛡️ Consola del API Gateway (MS-01)
+        <div className="campus-card" id="gateway-health-card">
+          <h3 className="card-title-indigo">
+            Consola del API Gateway (MS-01)
           </h3>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-            <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: 500 }}>Estado de Red:</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                width: '12px',
-                height: '12px',
-                borderRadius: '50%',
-                backgroundColor: gatewayStatus === 'ONLINE' ? '#10b981' : gatewayStatus === 'OFFLINE' ? '#ef4444' : '#eab308',
-                boxShadow: gatewayStatus === 'ONLINE' ? '0 0 10px #10b981' : gatewayStatus === 'OFFLINE' ? '0 0 10px #ef4444' : 'none'
-              }}></div>
-              <span style={{
-                fontWeight: 700,
-                fontSize: '14px',
-                color: gatewayStatus === 'ONLINE' ? '#10b981' : gatewayStatus === 'OFFLINE' ? '#ef4444' : '#eab308'
-              }}>
+          
+          <div className="gateway-row-item">
+            <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>Estado de Red:</span>
+            <div className="gateway-status-dot-wrapper">
+              <div className={`gateway-status-dot ${gatewayStatus.toLowerCase()} ${gatewayStatus === 'ONLINE' ? 'animate-pulse-green' : ''}`}></div>
+              <span className={`gateway-status-text ${gatewayStatus.toLowerCase()}`} style={{ color: gatewayStatus === 'ONLINE' ? '#10b981' : gatewayStatus === 'OFFLINE' ? '#ef4444' : '#eab308' }}>
                 {gatewayStatus}
               </span>
             </div>
           </div>
 
           {gatewayStatus === 'ONLINE' && healthData ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#cbd5e1' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b' }}>Servicio:</span>
-                <span style={{ fontWeight: 600 }}>{healthData.gateway}</span>
+            <div className="gateway-details-list">
+              <div className="gateway-detail-row">
+                <span className="gateway-detail-key">Servicio:</span>
+                <span className="gateway-detail-val">{healthData.gateway}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b' }}>Mensaje:</span>
-                <span style={{ color: '#10b981', fontWeight: 600 }}>{healthData.status}</span>
+              <div className="gateway-detail-row">
+                <span className="gateway-detail-key">Mensaje:</span>
+                <span className="gateway-detail-val active-green">{healthData.status}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b' }}>Ambiente:</span>
-                <span style={{ textTransform: 'capitalize' }}>{healthData.ambiente}</span>
+              <div className="gateway-detail-row">
+                <span className="gateway-detail-key">Ambiente:</span>
+                <span className="gateway-detail-val" style={{ textTransform: 'capitalize' }}>{healthData.ambiente}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b' }}>Latencia local:</span>
-                <span style={{ color: '#38bdf8', fontWeight: 600 }}>{healthData.latency} ms</span>
+              <div className="gateway-detail-row">
+                <span className="gateway-detail-key">Latencia local:</span>
+                <span className="gateway-detail-val active-cyan">{healthData.latency} ms</span>
               </div>
             </div>
           ) : (
-            <div style={{ padding: '12px', backgroundColor: '#334155', borderRadius: '8px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
+            <div className="gateway-status-placeholder">
               {gatewayStatus === 'CHECKING' 
                 ? 'Conectando con el endpoint /health...' 
                 : 'Sin respuesta del Gateway en http://localhost:3000. Asegúrate de iniciar ms-01-gateway.'}
             </div>
           )}
 
-          <div style={{ marginTop: '16px', fontSize: '11px', color: '#64748b', textAlign: 'right' }}>
+          <div className="gateway-timestamp">
             Último chequeo: {lastCheck || 'Nunca'}
           </div>
         </div>
 
         {/* Registro del Monorepo */}
-        <div style={{
-          backgroundColor: '#1e293b',
-          borderRadius: '12px',
-          padding: '20px',
-          border: '1px solid #334155',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-        }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#a855f7', fontWeight: 700 }}>
-            📦 Registro de Microservicios
+        <div className="campus-card" id="services-registry-card">
+          <h3 className="card-title-purple">
+            Registro de Microservicios
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', maxHeight: '180px', paddingRight: '4px' }}>
+          
+          <div className="services-scroll-container">
             {monorepoServices.map(service => (
-              <div key={service.name} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '6px 8px',
-                backgroundColor: '#0f172a',
-                borderRadius: '6px',
-                fontSize: '11px'
-              }}>
+              <div key={service.name} className="service-item-row">
                 <div>
-                  <div style={{ fontWeight: 700, color: '#f1f5f9' }}>{service.name}</div>
-                  <div style={{ color: '#64748b', fontSize: '10px' }}>{service.desc}</div>
+                  <div className="service-name">{service.name}</div>
+                  <div className="service-desc">{service.desc}</div>
                 </div>
-                <span style={{
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  backgroundColor: `${service.color}15`,
-                  color: service.color,
-                  fontWeight: 700,
-                  fontSize: '9px'
-                }}>
+                <span 
+                  className="service-status-chip"
+                  style={{
+                    backgroundColor: `${service.color}12`,
+                    color: service.color,
+                    border: `1px solid ${service.color}25`
+                  }}
+                >
                   {service.status}
                 </span>
               </div>
@@ -221,89 +186,65 @@ function App() {
       </div>
 
       {/* 2. Sección Inferior: Decodificador JWT */}
-      <div style={{
-        backgroundColor: '#1e293b',
-        borderRadius: '12px',
-        padding: '24px',
-        border: '1px solid #334155',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-      }}>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#a855f7', fontWeight: 700 }}>
-          🗝️ Inspector de Identidad (Token de Sesión Activa)
+      <div className="campus-card token-decoder-section" id="jwt-inspector-card">
+        <h3 className="card-title-purple">
+          Inspector de Identidad (Token de Sesión Activa)
         </h3>
-        <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#94a3b8' }}>
+        <p className="token-decoder-subtitle">
           Este panel inspecciona los claims de seguridad del token de tu sesión de Keycloak activa en el portal, sin exponer el texto del token directamente.
         </p>
 
         {decodeError && (
-          <div style={{ padding: '10px 14px', backgroundColor: '#ef444415', border: '1px solid #ef4444', borderRadius: '6px', fontSize: '12px', color: '#f87171' }}>
+          <div className="token-error-banner animate-fade-in" id="jwt-decoder-error">
             ⚠️ {decodeError}
           </div>
         )}
 
         {decodedToken && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="token-info-wrapper animate-slide-up">
             {/* Cabecera del Token */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+            <div className="token-badges-row">
               {/* Usuario */}
-              <div style={{ backgroundColor: '#0f172a', padding: '8px 16px', borderRadius: '8px', border: '1px solid #334155', flexGrow: 1 }}>
-                <span style={{ fontSize: '10px', color: '#64748b', display: 'block' }}>Usuario Autenticado</span>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>{decodedToken.preferred_username || 'No disponible'}</span>
+              <div className="token-badge-card">
+                <span className="badge-card-lbl">Usuario Autenticado</span>
+                <span className="badge-card-val">{decodedToken.preferred_username || 'No disponible'}</span>
               </div>
               {/* ID de Sujeto */}
-              <div style={{ backgroundColor: '#0f172a', padding: '8px 16px', borderRadius: '8px', border: '1px solid #334155', flexGrow: 1 }}>
-                <span style={{ fontSize: '10px', color: '#64748b', display: 'block' }}>Keycloak Subject ID (sub)</span>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9', fontFamily: 'monospace' }}>{decodedToken.sub || 'No disponible'}</span>
+              <div className="token-badge-card">
+                <span className="badge-card-lbl">Keycloak Subject ID (sub)</span>
+                <span className="badge-card-val mono">{decodedToken.sub || 'No disponible'}</span>
               </div>
               {/* Estado de Expiración */}
-              <div style={{
-                backgroundColor: isTokenExpired(decodedToken.exp) ? '#ef444415' : '#10b98115',
-                padding: '8px 16px',
-                borderRadius: '8px',
-                border: isTokenExpired(decodedToken.exp) ? '1px solid #ef4444' : '1px solid #10b981',
-                minWidth: '120px',
-                textAlign: 'center'
-              }}>
-                <span style={{ fontSize: '10px', color: isTokenExpired(decodedToken.exp) ? '#ef4444' : '#10b981', display: 'block', fontWeight: 700 }}>Estado de Sesión</span>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: isTokenExpired(decodedToken.exp) ? '#ef4444' : '#10b981' }}>
+              <div className={`token-status-indicator ${isTokenExpired(decodedToken.exp) ? 'expired' : 'active'}`}>
+                <span className="badge-card-lbl" style={{ color: 'inherit' }}>Estado de Sesión</span>
+                <span style={{ fontSize: '13.5px', fontWeight: 800 }}>
                   {isTokenExpired(decodedToken.exp) ? 'CADUCADO ❌' : 'ACTIVO ✅'}
                 </span>
               </div>
             </div>
 
             {/* Detalles Roles y JSON Completo */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '16px' }}>
+            <div className="token-details-grid">
               {/* Roles de Keycloak */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8' }}>Roles asignados en Keycloak:</span>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              <div className="roles-section">
+                <span className="roles-section-lbl">Roles asignados en Keycloak:</span>
+                <div className="roles-flex">
                   {decodedToken.realm_access?.roles ? (
                     decodedToken.realm_access.roles.map((role: string) => (
-                      <span key={role} style={{ padding: '4px 8px', borderRadius: '4px', backgroundColor: '#334155', fontSize: '11px', color: '#e2e8f0', fontWeight: 500 }}>
+                      <span key={role} className="role-chip">
                         {role}
                       </span>
                     ))
                   ) : (
-                    <span style={{ fontSize: '11px', color: '#64748b' }}>Sin roles asociados.</span>
+                    <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>Sin roles asociados.</span>
                   )}
                 </div>
               </div>
 
               {/* JSON Payload Completo */}
-              <div>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '6px' }}>Payload de Identidad (Claims decodificados):</span>
-                <pre style={{
-                  backgroundColor: '#090d16',
-                  color: '#cbd5e1',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  fontSize: '11px',
-                  overflow: 'auto',
-                  maxHeight: '150px',
-                  border: '1px solid #1e293b',
-                  margin: 0,
-                  fontFamily: '"Fira Code", monospace'
-                }}>
+              <div className="json-visor-section">
+                <span className="json-visor-lbl">Payload de Identidad (Claims decodificados):</span>
+                <pre className="token-json-console" id="jwt-token-json">
                   {JSON.stringify(decodedToken, null, 2)}
                 </pre>
               </div>

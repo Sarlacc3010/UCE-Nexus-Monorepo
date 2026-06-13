@@ -19,6 +19,11 @@ variable "subnet_id" {
   description = "ID de la subred donde se desplegarán las instancias"
 }
 
+variable "subnet_b_id" {
+  type        = string
+  description = "ID de la subred secundaria para el ALB"
+}
+
 variable "instance_type" {
   type        = string
   default     = "t2.micro"

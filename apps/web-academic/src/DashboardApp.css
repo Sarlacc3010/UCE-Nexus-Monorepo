@@ -1,0 +1,461 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+.dashboard-container {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #333;
+  width: 100%;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* CARDS */
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.card-header {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.blue-header {
+  background-color: #0d3b8e;
+  color: white;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.blue-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.blue-header p {
+  margin: 2px 0 0 0;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.default-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+}
+
+.default-header p {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.card-body.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* HORARIO */
+.schedule-item {
+  display: flex;
+  align-items: center;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-left: 4px solid transparent;
+  transition: background-color 0.2s;
+}
+
+.schedule-item:hover {
+  background-color: #f1f5f9;
+  border-left-color: #0d3b8e;
+}
+
+.schedule-item:last-child {
+  margin-bottom: 0;
+}
+
+.time-badge {
+  display: flex;
+  flex-direction: column;
+  background-color: #0d3b8e;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  text-align: center;
+  min-width: 60px;
+  margin-right: 16px;
+}
+
+.time-badge span:last-child {
+  opacity: 0.8;
+  font-size: 11px;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.class-details h4 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  color: #111;
+}
+
+.class-details p {
+  margin: 0 0 6px 0;
+  font-size: 13px;
+  color: #555;
+}
+
+.room-badge {
+  background-color: #e2e8f0;
+  color: #475569;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* BOTONES */
+.btn-outline-red {
+  background: transparent;
+  border: 1px solid #b3001b;
+  color: #b3001b;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-outline-red:hover {
+  background: #b3001b;
+  color: white;
+}
+
+.btn-solid-red {
+  background: #b3001b;
+  border: none;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-solid-red:hover {
+  background: #900015;
+}
+
+.btn-outline-blue {
+  background: transparent;
+  border: 1px solid #0d3b8e;
+  color: #0d3b8e;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-outline-blue:hover {
+  background: #f0f4ff;
+}
+
+.btn-outline-gray {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-outline-gray:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+/* TAREAS */
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+
+.task-item:hover {
+  border-color: #cbd5e1;
+  background-color: #fcfcfd;
+}
+
+.task-item.completed {
+  background-color: #f8fafc;
+  border-color: #f1f5f9;
+}
+
+.task-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  margin-right: 16px;
+  margin-top: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  transition: all 0.2s;
+}
+
+.task-item:hover .task-radio:not(.checked) {
+  border-color: #94a3b8;
+}
+
+.task-radio.checked {
+  background-color: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+.task-details h4 {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.task-details h4.strike {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.badge-high {
+  color: #b3001b;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.badge-medium {
+  color: #d97706;
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.badge-low {
+  color: #475569;
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+
+.task-date {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.task-date.strike {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* PROGRESS PIE CHART */
+.chart-container {
+  margin: 10px 0 24px 0;
+}
+
+.pie-chart {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  /* Conic gradient matching Figma: 68% Blue, 22% Red, 10% Gray */
+  background: conic-gradient(
+    #0d3b8e 0% 68%,
+    #b3001b 68% 90%,
+    #e2e8f0 90% 100%
+  );
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  /* A slight white border inside for the gap effect could be done via SVG, but standard conic is enough for now */
+  position: relative;
+}
+
+/* To simulate gaps in conic-gradient */
+.pie-chart::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 50%;
+}
+
+.legend-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 12px;
+}
+
+.dot-blue { background-color: #0d3b8e; }
+.dot-red { background-color: #b3001b; }
+.dot-gray { background-color: #e2e8f0; }
+
+.legend-label {
+  flex-grow: 1;
+  color: #475569;
+}
+
+.legend-value {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.divider {
+  width: 100%;
+  height: 1px;
+  background-color: #e2e8f0;
+  margin: 20px 0;
+}
+
+.average-container {
+  width: 100%;
+}
+
+.average-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 10px;
+}
+
+.average-header span:first-child {
+  font-size: 13px;
+  color: #475569;
+}
+
+.average-score {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0d3b8e;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: #0d3b8e;
+  border-radius: 4px;
+}
+
+/* EVENT BADGE */
+.event-badge {
+  background-color: #f0f4ff;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 0 20px 20px 20px;
+}
+
+.event-title {
+  color: #1e40af;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.event-name {
+  color: #1e3a8a;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.event-date {
+  color: #64748b;
+  font-size: 12px;
+}

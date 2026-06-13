@@ -1,11 +1,10 @@
 {
   "compilerOptions": {
     "target": "es2016",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "node16",
+    "moduleResolution": "node16",
     "outDir": "./dist",
     "rootDir": "./src",
-    "ignoreDeprecations": "6.0",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -21,5 +20,7 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "types": []
-  }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "tests/**/*"]
 }

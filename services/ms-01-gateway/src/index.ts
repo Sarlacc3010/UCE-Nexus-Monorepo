@@ -9,6 +9,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './swagger';
+import logger from './logger';
 
 dotenv.config();
 
@@ -17,6 +20,9 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Documentación Swagger
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 1. SEGURIDAD: Configuración de Keycloak
 const client = jwksClient({
@@ -47,6 +53,7 @@ const authenticateJWT = (req: Request, res: Response, next: NextFunction): void 
         }
         jwt.verify(token, getKey, { algorithms: ['RS256'] }, (err: VerifyErrors | null, decoded: string | JwtPayload | undefined) => {
             if (err) {
+                logger.warn(`Intento de acceso con token inválido: ${err.message}`);
                 res.status(403).json({ error: 'Token inválido o expirado. Acceso denegado.' });
                 return;
             }
@@ -58,6 +65,20 @@ const authenticateJWT = (req: Request, res: Response, next: NextFunction): void 
     }
 };
 
+const requireRole = (role: string) => {
+    return (req: Request, res: Response, next: NextFunction): void => {
+        const user = (req as any).user;
+        const roles = user?.realm_access?.roles || [];
+        if (!roles.includes(role)) {
+            logger.warn(`Acceso denegado. Se requiere el rol: ${role}. Roles actuales: ${roles}`);
+            res.status(403).json({ error: `Acceso denegado. Se requiere rol: ${role}` });
+            return;
+        }
+        next();
+    };
+};
+
+
 // 2. CONEXIÓN gRPC: Cargar el contrato y crear el cliente
 const PROTO_PATH = path.join(__dirname, 'booking.proto');
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
@@ -68,6 +89,15 @@ const bookingServiceUrl = process.env.BOOKING_SERVICE_URL || 'localhost:50051';
 const bookingClient = new bookingProto.BookingService(bookingServiceUrl, grpc.credentials.createInsecure());
 
 // 3. RUTAS
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Verifica el estado del Gateway
+ *     responses:
+ *       200:
+ *         description: OK
+ */
 app.get('/health', (req: Request, res: Response) => {
     res.json({
         status: 'API Gateway Operativo', gateway: 'MS-01', ambiente: process.env.NODE_ENV || 'local'
@@ -110,7 +140,7 @@ app.post('/api/login', async (req: Request, res: Response): Promise<void> => {
             res.status(response.status).json(data);
         }
     } catch (error: any) {
-        console.error('Error al redirigir autenticación a Keycloak:', error);
+        logger.error('Error al redirigir autenticación a Keycloak:', error);
         res.status(500).json({ error: 'Error de conexión con el servidor de autenticación Keycloak.' });
     }
 });
@@ -149,13 +179,26 @@ app.post('/api/refresh', async (req: Request, res: Response): Promise<void> => {
             res.status(response.status).json(data);
         }
     } catch (error: any) {
-        console.error('Error al refrescar token en Keycloak:', error);
+        logger.error('Error al refrescar token en Keycloak:', error);
         res.status(500).json({ error: 'Error de conexión con el servidor de autenticación Keycloak.' });
     }
 });
 
-// Ruta protegida que ahora llama a Go con autenticación JWT activa
-app.post('/api/reservas', authenticateJWT, (req: Request, res: Response) => {
+// Ruta protegida que ahora llama a Go con autenticación JWT activa y protección de roles
+/**
+ * @swagger
+ * /api/reservas:
+ *   post:
+ *     summary: Crear una reserva (requiere rol user)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Reserva exitosa
+ *       403:
+ *         description: No autorizado
+ */
+app.post('/api/reservas', authenticateJWT, requireRole('user'), (req: Request, res: Response) => {
     const decoded = (req as any).user;
     
     // Extrae el ID de usuario desde el token decodificado de Keycloak (sub o username)
@@ -170,10 +213,12 @@ app.post('/api/reservas', authenticateJWT, (req: Request, res: Response) => {
 
     bookingClient.CreateBooking(grpcRequest, (err: any, response: any) => {
         if (err) {
-            console.error("Error gRPC:", err);
+            logger.error("Error gRPC al crear reserva:", err);
             res.status(500).json({ error: 'Fallo al comunicarse con el motor de reservas' });
             return;
         }
+
+        logger.info(`Reserva procesada exitosamente para el usuario ${userId}`);
 
         res.json({
             gateway_message: "Petición autenticada y procesada exitosamente en el motor de reservas",
@@ -182,7 +227,14 @@ app.post('/api/reservas', authenticateJWT, (req: Request, res: Response) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 UCE-Nexus API Gateway corriendo en http://localhost:${PORT}`);
-    console.log(`🛡️  Seguridad JWT y cliente gRPC habilitados.`);
-});
+
+
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        logger.info(`🚀 UCE-Nexus API Gateway corriendo en http://localhost:${PORT}`);
+        logger.info(`🛡️  Seguridad JWT y cliente gRPC habilitados.`);
+        logger.info(`📖 Swagger UI disponible en http://localhost:${PORT}/api-docs`);
+    });
+}
+
+export { app };

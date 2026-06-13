@@ -11,6 +11,7 @@ export default defineConfig({
       // Aquí declaramos qué componentes vamos a "prestarle" al Host
       exposes: {
         './BookingApp': './src/App.tsx',
+        './DashboardApp': './src/DashboardApp.tsx',
       },
       shared: ['react', 'react-dom']
     })

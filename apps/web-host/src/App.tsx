@@ -1,11 +1,13 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
+import './App.css'
 
 // Importación dinámica a través de la red (Vite Module Federation)
+const DashboardApp = lazy(() => import('academic/DashboardApp'))
 const AcademicApp = lazy(() => import('academic/BookingApp'))
 const GatewayApp = lazy(() => import('gateway/GatewayApp'))
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'academic' | 'gateway'>('academic');
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [token, setToken] = useState<string>(localStorage.getItem('uce_token') || '');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -129,130 +131,36 @@ function App() {
   // Si no hay un token válido, mostrar la pantalla de Login Premium
   if (!token || isTokenExpired(token)) {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        backgroundColor: '#0f172a',
-        color: '#f8fafc',
-        margin: 0,
-        padding: '20px',
-        boxSizing: 'border-box'
-      }}>
-        <div style={{
-          width: '100%',
-          maxWidth: '420px',
-          backgroundColor: '#1e293b',
-          borderRadius: '16px',
-          border: '1px solid #334155',
-          padding: '40px 32px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-          boxSizing: 'border-box'
-        }}>
-          {/* Logo / Cabecera */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '32px' }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 'bold',
-              fontSize: '24px',
-              color: '#ffffff',
-              marginBottom: '16px',
-              boxShadow: '0 8px 16px rgba(99, 102, 241, 0.4)'
-            }}>
-              U
-            </div>
-            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 800, letterSpacing: '0.5px' }}>UCE-Nexus</h2>
-            <span style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>Inicia sesión para acceder al portal académico</span>
+      <div className="login-container animate-fade-in" id="login-screen">
+        <div className="login-ambient-blob-1"></div>
+        <div className="login-ambient-blob-2"></div>
+        
+        <div className="login-card animate-slide-up">
+          <div className="login-header">
+            <div className="login-logo">U</div>
+            <h1 className="login-title">SIIU</h1>
+            <span className="login-subtitle">Sistema Integrado de Información Universitaria</span>
           </div>
 
-          {/* Formulario */}
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#e2e8f0', marginBottom: '6px' }}>
-                Usuario de Keycloak:
-              </label>
-              <input
-                type="text"
-                placeholder="ej. estudiante1"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '8px',
-                  border: '1px solid #475569',
-                  backgroundColor: '#0f172a',
-                  color: '#f8fafc',
-                  fontSize: '14px',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
+          <form onSubmit={handleLogin}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="input-username">Usuario Institucional</label>
+              <input id="input-username" type="text" placeholder="ej. juan.sanchez" value={username} onChange={(e) => setUsername(e.target.value)} className="form-input" />
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#e2e8f0', marginBottom: '6px' }}>
-                Contraseña:
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '8px',
-                  border: '1px solid #475569',
-                  backgroundColor: '#0f172a',
-                  color: '#f8fafc',
-                  fontSize: '14px',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
+            <div className="form-group">
+              <label className="form-label" htmlFor="input-password">Contraseña</label>
+              <input id="input-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="form-input" />
             </div>
 
             {loginError && (
-              <div style={{
-                padding: '10px 14px',
-                backgroundColor: '#ef444415',
-                border: '1px solid #ef4444',
-                borderRadius: '8px',
-                fontSize: '12px',
-                color: '#f87171',
-                lineHeight: '1.4'
-              }}>
-                ⚠️ {loginError}
+              <div className="login-error animate-fade-in" id="error-message">
+                <span>⚠️</span> {loginError}
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={isLoggingIn}
-              style={{
-                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                color: 'white',
-                border: 'none',
-                padding: '12px',
-                borderRadius: '8px',
-                cursor: isLoggingIn ? 'not-allowed' : 'pointer',
-                fontWeight: 700,
-                fontSize: '14px',
-                marginTop: '10px',
-                boxShadow: '0 4px 6px rgba(99, 102, 241, 0.2)',
-                transition: 'opacity 0.2s'
-              }}
-            >
-              {isLoggingIn ? 'Autenticando en Keycloak...' : 'Ingresar al Portal'}
+            <button id="btn-login-submit" type="submit" disabled={isLoggingIn} className="login-button">
+              {isLoggingIn ? 'Autenticando...' : 'Ingresar'}
             </button>
           </form>
         </div>
@@ -260,214 +168,98 @@ function App() {
     );
   }
 
-  // Si está autenticado, renderizar el Dashboard Principal
+  // Helper para renderizar contenido basado en la tab seleccionada
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <DashboardApp />;
+      case 'matriculacion':
+        return <AcademicApp />;
+      case 'gateway':
+        return <GatewayApp />;
+      default:
+        return (
+          <div className="coming-soon-container">
+            <h3>Módulo en construcción</h3>
+            <p>Este módulo será implementado próximamente.</p>
+          </div>
+        );
+    }
+  };
+
   return (
-    <div style={{
-      display: 'flex',
-      minHeight: '100vh',
-      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      backgroundColor: '#0f172a',
-      color: '#f8fafc',
-      margin: 0,
-      padding: 0
-    }}>
-      {/* 1. Barra Lateral de Navegación (Sidebar) */}
-      <aside style={{
-        width: '260px',
-        backgroundColor: '#1e293b',
-        borderRight: '1px solid #334155',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '24px 16px',
-        boxSizing: 'border-box'
-      }}>
+    <div className="dashboard-layout animate-fade-in" id="dashboard-shell">
+      
+      {/* 1. Barra Lateral de Navegación (Sidebar SIIU) */}
+      <aside className="sidebar siu-sidebar">
         {/* Logo */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          marginBottom: '32px',
-          padding: '0 8px'
-        }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 'bold',
-            fontSize: '18px',
-            color: '#ffffff',
-            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
-          }}>
-            U
-          </div>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, letterSpacing: '0.5px' }}>UCE-Nexus</h2>
-            <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500 }}>Portal de Control</span>
-          </div>
+        <div className="sidebar-logo-section">
+          <h2>SIIU</h2>
+          <span className="sidebar-subtitle">Sistema Integrado de Información Universitaria</span>
         </div>
 
-        {/* Links */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexGrow: 1 }}>
-          <button
-            onClick={() => setActiveTab('academic')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'academic' ? '#334155' : 'transparent',
-              color: activeTab === 'academic' ? '#6366f1' : '#94a3b8',
-              textAlign: 'left',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '14px',
-              transition: 'all 0.2s ease',
-              width: '100%'
-            }}
-          >
-            <span style={{ fontSize: '18px' }}>🔬</span>
-            Reserva de Laboratorios
+        {/* Links de navegación */}
+        <nav className="sidebar-nav">
+          <button onClick={() => setActiveTab('dashboard')} className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}>
+            Dashboard
           </button>
-
-          <button
-            onClick={() => setActiveTab('gateway')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'gateway' ? '#334155' : 'transparent',
-              color: activeTab === 'gateway' ? '#a855f7' : '#94a3b8',
-              textAlign: 'left',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '14px',
-              transition: 'all 0.2s ease',
-              width: '100%'
-            }}
-          >
-            <span style={{ fontSize: '18px' }}>🛡️</span>
-            Control de Gateway & IAM
+          <button onClick={() => setActiveTab('matriculacion')} className={`nav-item ${activeTab === 'matriculacion' ? 'active' : ''}`}>
+            Matriculación (Reservas)
+          </button>
+          <button onClick={() => setActiveTab('calificaciones')} className={`nav-item ${activeTab === 'calificaciones' ? 'active' : ''}`}>
+            Calificaciones
+          </button>
+          <button onClick={() => setActiveTab('pagos')} className={`nav-item ${activeTab === 'pagos' ? 'active' : ''}`}>
+            Pagos
+          </button>
+          <button onClick={() => setActiveTab('biblioteca')} className={`nav-item ${activeTab === 'biblioteca' ? 'active' : ''}`}>
+            Biblioteca
+          </button>
+          <button onClick={() => setActiveTab('notificaciones')} className={`nav-item ${activeTab === 'notificaciones' ? 'active' : ''}`}>
+            Notificaciones
+          </button>
+          <button onClick={() => setActiveTab('gateway')} className={`nav-item ${activeTab === 'gateway' ? 'active' : ''}`}>
+            Control de IAM / Gateway
           </button>
         </nav>
 
-        {/* Botón de Cerrar Sesión */}
-        <div style={{ borderTop: '1px solid #334155', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <button
-            onClick={handleLogout}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              padding: '10px',
-              borderRadius: '8px',
-              border: '1px solid #ef4444',
-              backgroundColor: 'transparent',
-              color: '#ef4444',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '13px',
-              transition: 'all 0.2s'
-            }}
-          >
-            <span>🚪</span> Cerrar Sesión
-          </button>
-          <div style={{
-            fontSize: '11px',
-            color: '#64748b',
-            textAlign: 'center'
-          }}>
-            UCE-Nexus MFA Shell v1.0.0
+        {/* User Profile */}
+        <div className="sidebar-user-profile" onClick={handleLogout} title="Cerrar sesión">
+          <div className="user-avatar">JS</div>
+          <div className="user-info">
+            <span className="user-name">Juan Sánchez</span>
+            <span className="user-role">Estudiante</span>
           </div>
         </div>
       </aside>
 
       {/* 2. Contenido Principal */}
-      <main style={{
-        flexGrow: 1,
-        padding: '40px',
-        boxSizing: 'border-box',
-        overflowY: 'auto',
-        maxHeight: '100vh'
-      }}>
-        {/* Cabecera */}
-        <header style={{ marginBottom: '32px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 800 }}>
-                {activeTab === 'academic' ? 'Módulo Académico' : 'Módulo de Seguridad e Identidad'}
-              </h1>
-              <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '14px' }}>
-                {activeTab === 'academic' 
-                  ? 'Gestiona tus reservas de laboratorio interactuando con el motor de Go gRPC.' 
-                  : 'Monitorea el estado del API Gateway (Node.js) y audita tokens JWT de Keycloak.'}
-              </p>
-            </div>
-            <div style={{
-              padding: '6px 12px',
-              borderRadius: '20px',
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
-              fontSize: '12px',
-              color: '#38bdf8',
-              fontWeight: 600
-            }}>
-              Sesión Activa
-            </div>
+      <main className="main-content">
+        {/* Cabecera SIU */}
+        <header className="siu-header">
+          <div className="header-greeting">
+            <h1>¡Bienvenido, Juan!</h1>
+            <p>Viernes, 12 de Junio de 2026</p>
           </div>
+          <button className="btn-notifications">
+            Ver Notificaciones
+          </button>
         </header>
 
-        {/* Contenido */}
-        <div style={{
-          backgroundColor: '#1e293b',
-          border: '1px solid #334155',
-          borderRadius: '12px',
-          padding: '24px',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
-          minHeight: '400px'
-        }}>
+        {/* Contenedor MFE */}
+        <section className="mfe-viewport-container">
           <Suspense fallback={
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '350px',
-              gap: '16px'
-            }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                border: '4px solid #334155',
-                borderTopColor: activeTab === 'academic' ? '#6366f1' : '#a855f7',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite'
-              }}></div>
-              <span style={{ color: '#94a3b8', fontSize: '14px', fontWeight: 500 }}>
-                Cargando Módulo {activeTab === 'academic' ? 'Académico (Puerto 5001)' : 'Gateway (Puerto 5002)'} por la red...
+            <div className="mfe-loader">
+              <div className="loader-spinner animate-spin-loader"></div>
+              <span className="loader-text">
+                Cargando Módulo Remoto...
               </span>
             </div>
           }>
-            {activeTab === 'academic' ? <AcademicApp /> : <GatewayApp />}
+            {renderContent()}
           </Suspense>
-        </div>
+        </section>
       </main>
-
-      {/* Animación Spinner */}
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   )
 }

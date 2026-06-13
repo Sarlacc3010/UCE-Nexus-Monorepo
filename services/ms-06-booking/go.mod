@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/rabbitmq/amqp091-go v1.9.0
 	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
 )

@@ -1,0 +1,69 @@
+name: PR Flow Automation
+
+on:
+  push:
+    branches:
+      - dev
+      - qa
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  auto-pr-dev-to-qa:
+    name: Auto PR Dev to QA
+    if: github.ref_name == 'dev'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Create Pull Request to QA
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "==== AUTO-PR: DEV TO QA ===="
+          
+          # Verificar si ya existe un PR abierto de dev a qa
+          EXISTING_PR=$(gh pr list --base qa --head dev --json number --jq '.[0].number')
+          
+          if [ -z "$EXISTING_PR" ]; then
+            echo "No se encontró un PR abierto de dev a qa. Creando uno nuevo..."
+            gh pr create \
+              --base qa \
+              --head dev \
+              --title "Automatic PR: dev -> qa" \
+              --body "PR automático creado por GitHub Actions tras un commit en la rama dev."
+          else
+            echo "Ya existe un PR abierto de dev a qa (PR #$EXISTING_PR). No se requiere crear otro."
+          fi
+
+  auto-pr-qa-to-main:
+    name: Auto PR QA to Main
+    if: github.ref_name == 'qa'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Create Pull Request to Main (Prod)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "==== AUTO-PR: QA TO MAIN (PROD) ===="
+          
+          # Verificar si ya existe un PR abierto de qa a main
+          EXISTING_PR=$(gh pr list --base main --head qa --json number --jq '.[0].number')
+          
+          if [ -z "$EXISTING_PR" ]; then
+            echo "No se encontró un PR abierto de qa a main. Creando uno nuevo y asignando revisor..."
+            gh pr create \
+              --base main \
+              --head qa \
+              --title "Automatic PR: qa -> main (Prod)" \
+              --body "PR automático creado por GitHub Actions tras verificar las pruebas en la rama qa." \
+              --reviewer "JuanGuevara90"
+          else
+            echo "Ya existe un PR abierto de qa a main (PR #$EXISTING_PR). No se requiere crear otro."
+          fi

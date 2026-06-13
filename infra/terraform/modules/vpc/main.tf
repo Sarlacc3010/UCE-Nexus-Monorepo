@@ -22,10 +22,22 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.subnet_cidr
   map_public_ip_on_launch = true
-  availability_zone       = "us-east-1a" # AWS Academy Learner Lab es generalmente en us-east-1
+  availability_zone       = "us-east-1a"
 
   tags = {
-    Name        = "${var.project_name}-${lower(var.environment)}-public-subnet"
+    Name        = "${var.project_name}-${lower(var.environment)}-public-subnet-a"
+    Environment = var.environment
+  }
+}
+
+resource "aws_subnet" "public_b" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.subnet_b_cidr
+  map_public_ip_on_launch = true
+  availability_zone       = "us-east-1b"
+
+  tags = {
+    Name        = "${var.project_name}-${lower(var.environment)}-public-subnet-b"
     Environment = var.environment
   }
 }
@@ -46,5 +58,10 @@ resource "aws_route_table" "public" {
 
 resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "public_b" {
+  subnet_id      = aws_subnet.public_b.id
   route_table_id = aws_route_table.public.id
 }

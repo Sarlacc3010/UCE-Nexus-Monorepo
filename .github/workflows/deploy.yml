@@ -6,6 +6,9 @@ on:
       - qa
       - main
 
+env:
+  DOCKER_HUB_TAG: qa
+
 jobs:
   deploy:
     name: Deploy to EC2 via Bastion Jump
@@ -25,12 +28,14 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           
           # Determinar IPs según la rama (QA o Main/Production)
-          if [ "${{ github.ref_name }}" = "main" ]; then
+           if [ "${{ github.ref_name }}" = "main" ]; then
             echo "DEPLOY_ENV=Production" >> $GITHUB_ENV
+            echo "DOCKER_HUB_TAG=prod" >> $GITHUB_ENV
             echo "BASTION_IP=${{ secrets.PROD_BASTION_IP }}" >> $GITHUB_ENV
             echo "APP_PRIVATE_IP=${{ secrets.PROD_APP_PRIVATE_IP }}" >> $GITHUB_ENV
           else
             echo "DEPLOY_ENV=QA" >> $GITHUB_ENV
+            echo "DOCKER_HUB_TAG=qa" >> $GITHUB_ENV
             echo "BASTION_IP=${{ secrets.QA_BASTION_IP }}" >> $GITHUB_ENV
             echo "APP_PRIVATE_IP=${{ secrets.QA_APP_PRIVATE_IP }}" >> $GITHUB_ENV
           fi
@@ -57,34 +62,61 @@ jobs:
           EOF
 
       # ==========================================
-      # 2. Preparar Directorio en el Servidor App
+      # 2. Diagnóstico de Conexión y Secretos
+      # ==========================================
+      - name: Test SSH Connection and Secrets
+        run: |
+          echo "==== DIAGNOSTIC SSH CONNECTION TEST ===="
+          echo "Target Environment: ${DEPLOY_ENV}"
+          
+          # Verificar si las variables están vacías
+          if [ -z "${BASTION_IP}" ]; then
+            echo "❌ ERROR: BASTION_IP is empty. Please check if QA_BASTION_IP or PROD_BASTION_IP is set in GitHub Secrets."
+            exit 1
+          fi
+          if [ -z "${APP_PRIVATE_IP}" ]; then
+            echo "❌ ERROR: APP_PRIVATE_IP is empty. Please check if QA_APP_PRIVATE_IP or PROD_APP_PRIVATE_IP is set in GitHub Secrets."
+            exit 1
+          fi
+          
+          echo "BASTION_IP length: ${#BASTION_IP}"
+          echo "APP_PRIVATE_IP length: ${#APP_PRIVATE_IP}"
+          
+          # Probar conectividad al Bastion por el puerto 22 (SSH)
+          echo "Testing connection to Bastion (${BASTION_IP}) on port 22..."
+          nc -zv -w 5 ${BASTION_IP} 22 || echo "⚠️ Warning: Cannot reach Bastion on port 22. Check if instance is running and SG allows SSH."
+          
+          # Intentar conectar en modo verboso para depurar
+          echo "Testing SSH connection through Bastion to App Server..."
+          ssh -v -o ConnectTimeout=10 app-server "echo 'SSH connection via Bastion Jump is working!'"
+
+      # ==========================================
+      # 3. Preparar Directorio en el Servidor App
       # ==========================================
       - name: Create Remote Deploy Directory
         run: |
           ssh app-server "mkdir -p /home/ubuntu/app"
 
       # ==========================================
-      # 3. Transferir Archivo de Producción (Compose)
+      # 4. Transferir Archivo de Producción (Compose)
       # ==========================================
       - name: Copy docker-compose.prod.yml to App Server
         run: |
           scp infra/docker/docker-compose.prod.yml app-server:/home/ubuntu/app/docker-compose.prod.yml
 
       # ==========================================
-      # 4. Desplegar Aplicación (Login, Pull, Up)
+      # 5. Desplegar Aplicación (Login, Pull, Up)
       # ==========================================
       - name: Deploy Containers on App Server
         run: |
-          # 1. Autenticar Docker en la máquina remota con el registro GHCR
-          ssh app-server "echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u ${{ github.actor }} --password-stdin"
+          # 1. Autenticar Docker en la máquina remota con el registro Docker Hub
+          ssh app-server "echo '${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}' | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin"
           
           # 2. Descargar últimas imágenes y levantar servicios
-          # Convertir repository_owner a minúsculas
-          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           ssh app-server "
             cd /home/ubuntu/app && \
-            REGISTRY_OWNER=${OWNER_LOWER} docker-compose -f docker-compose.prod.yml pull && \
-            REGISTRY_OWNER=${OWNER_LOWER} docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            DOCKER_HUB_USER=${{ secrets.DOCKER_HUB_USERNAME }} IMAGE_TAG=${{ env.DOCKER_HUB_TAG }} docker-compose -f docker-compose.prod.yml pull && \
+            DOCKER_HUB_USER=${{ secrets.DOCKER_HUB_USERNAME }} IMAGE_TAG=${{ env.DOCKER_HUB_TAG }} docker-compose -f docker-compose.prod.yml up -d --remove-orphans
           "
           
           # 3. Limpieza de imágenes huérfanas/antiguas para liberar espacio
