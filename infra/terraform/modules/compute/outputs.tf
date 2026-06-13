@@ -1,6 +1,6 @@
 output "bastion_public_ip" {
-  value       = aws_instance.bastion.public_ip
-  description = "IP pública del Bastion Host"
+  value       = aws_eip.bastion_eip.public_ip
+  description = "IP pública elástica del Bastion Host"
 }
 
 output "alb_dns_name" {

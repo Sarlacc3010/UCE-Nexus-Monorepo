@@ -39,6 +39,17 @@ resource "aws_instance" "bastion" {
   }
 }
 
+# 2.1. Elastic IP estática para el Bastion Host
+resource "aws_eip" "bastion_eip" {
+  instance = aws_instance.bastion.id
+  domain   = "vpc"
+
+  tags = {
+    Name        = "${var.project_name}-${lower(var.environment)}-bastion-eip"
+    Environment = var.environment
+  }
+}
+
 # ALB Security Group
 resource "aws_security_group" "alb_sg" {
   name        = "${var.project_name}-${lower(var.environment)}-alb-sg"
@@ -180,7 +191,7 @@ resource "aws_autoscaling_group" "app_asg" {
   health_check_type   = "ELB"
 
   min_size         = 1
-  max_size         = 3
+  max_size         = 1
   desired_capacity = 1
 
   launch_template {
