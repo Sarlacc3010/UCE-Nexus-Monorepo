@@ -1,4 +1,9 @@
 import request from 'supertest';
+jest.mock('jwks-rsa', () => {
+  return jest.fn().mockImplementation(() => ({
+    getSigningKey: jest.fn()
+  }));
+});
 import { app } from '../src/index';
 
 describe('API Gateway', () => {
