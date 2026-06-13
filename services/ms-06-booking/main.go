@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"os"
 	"time"
@@ -14,6 +14,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 // Variable global para nuestro cliente de Redis
@@ -30,7 +31,7 @@ type server struct {
 }
 
 func (s *server) CreateBooking(ctx context.Context, req *pb.BookingRequest) (*pb.BookingResponse, error) {
-	log.Printf("📥 [gRPC] Petición de reserva iniciada por el usuario: %s", req.GetUserId())
+	slog.Info("[gRPC] Petición de reserva iniciada", "user_id", req.GetUserId())
 
 	// 1. Definimos una llave única para el Lock basada en el recurso y la fecha
 	// Ejemplo: lock:Laboratorio:LAB-Cisco-01:2026-05-31
@@ -40,13 +41,13 @@ func (s *server) CreateBooking(ctx context.Context, req *pb.BookingRequest) (*pb
 	// Le damos un TTL (Tiempo de vida) de 5 segundos para evitar Deadlocks si el servidor se cae
 	locked, err := rdb.SetNX(ctx, lockKey, req.GetUserId(), 5*time.Second).Result()
 	if err != nil {
-		log.Printf("❌ Error al conectar con Redis: %v", err)
+		slog.Error("Error al conectar con Redis", "error", err)
 		return nil, fmt.Errorf("error interno del servidor")
 	}
 
 	// 3. Evaluamos si logramos obtener el bloqueo
 	if !locked {
-		log.Printf("⚠️ CONFLICTO: El recurso %s está siendo reservado por otra transacción en este momento.", req.GetResourceId())
+		slog.Warn("CONFLICTO: El recurso está siendo reservado", "resource_id", req.GetResourceId())
 		return &pb.BookingResponse{
 			Success:   false,
 			Message:   "El recurso está temporalmente bloqueado. Otro estudiante está finalizando su reserva.",
@@ -54,12 +55,12 @@ func (s *server) CreateBooking(ctx context.Context, req *pb.BookingRequest) (*pb
 		}, nil
 	}
 
-	log.Printf("🔒 Lock adquirido exitosamente para %s. Procesando...", req.GetResourceId())
+	slog.Info("Lock adquirido exitosamente", "resource_id", req.GetResourceId())
 
 	// 4. Simulamos el tiempo de procesamiento (escritura en base de datos, validaciones, etc.)
 	time.Sleep(3 * time.Second)
 
-	log.Printf("✅ Reserva confirmada en base de datos. Liberando Lock...")
+	slog.Info("Reserva confirmada en base de datos. Liberando Lock...")
 
 	// 5. Liberamos el Lock para que otros puedan usar el recurso
 	rdb.Del(ctx, lockKey)
@@ -83,7 +84,7 @@ func (s *server) CreateBooking(ctx context.Context, req *pb.BookingRequest) (*pb
 
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
-		log.Printf("❌ Error al serializar evento de reserva: %v", err)
+		slog.Error("Error al serializar evento de reserva", "error", err)
 	} else {
 		err = mqChannel.PublishWithContext(
 			ctx,
@@ -97,9 +98,9 @@ func (s *server) CreateBooking(ctx context.Context, req *pb.BookingRequest) (*pb
 			},
 		)
 		if err != nil {
-			log.Printf("❌ Error al publicar evento en RabbitMQ: %v", err)
+			slog.Error("Error al publicar evento en RabbitMQ", "error", err)
 		} else {
-			log.Printf("📤 [RabbitMQ] Evento publicado con éxito: %s", string(eventBytes))
+			slog.Info("[RabbitMQ] Evento publicado con éxito", "event", string(eventBytes))
 		}
 	}
 	// -----------------------------------------
@@ -123,16 +124,18 @@ func initRabbitMQ() {
 		if err == nil {
 			break
 		}
-		log.Printf("⚠️ No se pudo conectar a RabbitMQ (intento %d/5): %v. Reintentando en 3s...", i+1, err)
+		slog.Warn("No se pudo conectar a RabbitMQ", "intento", i+1, "error", err)
 		time.Sleep(3 * time.Second)
 	}
 	if err != nil {
-		log.Fatalf("❌ Error fatal: No se pudo conectar a RabbitMQ. %v", err)
+		slog.Error("Error fatal: No se pudo conectar a RabbitMQ", "error", err)
+		os.Exit(1)
 	}
 
 	mqChannel, err = mqConn.Channel()
 	if err != nil {
-		log.Fatalf("❌ Error fatal: No se pudo crear el canal de RabbitMQ: %v", err)
+		slog.Error("Error fatal: No se pudo crear el canal de RabbitMQ", "error", err)
+		os.Exit(1)
 	}
 
 	_, err = mqChannel.QueueDeclare(
@@ -144,13 +147,18 @@ func initRabbitMQ() {
 		nil,       // arguments
 	)
 	if err != nil {
-		log.Fatalf("❌ Error fatal: No se pudo declarar la cola de RabbitMQ: %v", err)
+		slog.Error("Error fatal: No se pudo declarar la cola de RabbitMQ", "error", err)
+		os.Exit(1)
 	}
 
-	log.Printf("🟢 Conexión a RabbitMQ establecida exitosamente y cola '%s' de eventos lista.", queueName)
+	slog.Info("Conexión a RabbitMQ establecida exitosamente y cola de eventos lista", "queue", queueName)
 }
 
 func main() {
+	// Configure slog to output JSON
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	redisAddr := os.Getenv("REDIS_ADDR")
 	if redisAddr == "" {
 		redisAddr = "localhost:6379" // Respaldo para cuando corres en local sin Docker
@@ -162,9 +170,10 @@ func main() {
 
 	// Verificamos que Redis responda (Ping)
 	if err := rdb.Ping(context.Background()).Err(); err != nil {
-		log.Fatalf("❌ Error fatal: No se pudo conectar a Redis. ¿Está corriendo el contenedor? %v", err)
+		slog.Error("Error fatal: No se pudo conectar a Redis", "error", err)
+		os.Exit(1)
 	}
-	log.Printf("🟢 Conexión a Redis establecida exitosamente.")
+	slog.Info("Conexión a Redis establecida exitosamente")
 
 	// Inicializamos RabbitMQ
 	initRabbitMQ()
@@ -179,15 +188,20 @@ func main() {
 
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		log.Fatalf("❌ Fallo al abrir el puerto: %v", err)
+		slog.Error("Fallo al abrir el puerto", "error", err)
+		os.Exit(1)
 	}
+
+	slog.Info("🚀 MS-06 Booking Engine encendido", "port", 50051)
 
 	s := grpc.NewServer()
 	pb.RegisterBookingServiceServer(s, &server{})
-
-	log.Printf("🚀 MS-06 Booking Engine encendido en el puerto 50051")
+	
+	// Habilitar gRPC Reflection
+	reflection.Register(s)
 
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("❌ Fallo al servir gRPC: %v", err)
+		slog.Error("Fallo al servir gRPC", "error", err)
+		os.Exit(1)
 	}
 }
