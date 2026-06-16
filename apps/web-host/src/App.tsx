@@ -38,9 +38,8 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 // Importación dinámica a través de la red (Vite Module Federation)
-const DashboardApp = lazy(() => import('academic/DashboardApp'))
-const AcademicApp = lazy(() => import('academic/BookingApp'))
-const GatewayApp = lazy(() => import('gateway/GatewayApp'))
+const AcademicApp = lazy(() => import('academic/AcademicApp'))
+const CampusApp = lazy(() => import('gateway/CampusApp'))
 const ChatWidget = lazy(() => import('chatbot/ChatWidget'))
 
 // Comprobar si el token almacenado es válido y no está cerca de expirar (10 segundos de margen)
@@ -86,7 +85,7 @@ const getUserInfoFromToken = (jwtToken: string) => {
 };
 
 function App() {
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [activeTab, setActiveTab] = useState<string>('home');
   
   const getInitialToken = () => {
     const stored = localStorage.getItem('uce_token');
@@ -225,20 +224,16 @@ function App() {
 
   // Helper para renderizar contenido basado en la tab seleccionada
   const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <DashboardApp />;
-      case 'matriculacion':
-        return <AcademicApp />;
-      case 'gateway':
-        return <GatewayApp />;
-      default:
-        return (
-          <div className="coming-soon-container">
-            <h3>Módulo en construcción</h3>
-            <p>Este módulo será implementado próximamente.</p>
-          </div>
-        );
+    const academicTabs = [
+      'home', 'dashboard', 'matriculas', 'calificaciones', 'malla',
+      'seguro_vida', 'matricula_vigente', 'matriculacion',
+      'auditorio', 'canchas', 'tercera_matricula', 'retiro'
+    ];
+
+    if (academicTabs.includes(activeTab)) {
+      return <AcademicApp activeTab={activeTab} token={token} />;
+    } else {
+      return <CampusApp activeTab={activeTab} token={token} />;
     }
   };
 
@@ -356,6 +351,16 @@ function App() {
               </div>
 
               <nav className="nexus-sidebar-nav">
+                {/* Inicio / Home */}
+                <button 
+                  onClick={() => setActiveTab('home')} 
+                  className={`nexus-nav-item ${activeTab === 'home' ? 'active' : ''}`}
+                  style={{ marginBottom: '16px' }}
+                >
+                  <span className="nexus-nav-item-icon"><LayoutDashboard size={18} /></span>
+                  Inicio
+                </button>
+
                 {userInfo.role === 'Administrador' ? (
                   /* SIDEBAR PARA ADMINISTRADOR (DESPLEGABLE) */
                   <div className="nexus-nav-group">
