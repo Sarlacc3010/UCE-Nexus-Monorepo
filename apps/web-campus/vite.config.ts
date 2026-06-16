@@ -11,6 +11,7 @@ export default defineConfig({
       // Exponer el componente de panel de control de seguridad para que lo consuma el Host
       exposes: {
         './GatewayApp': './src/App.tsx',
+        './CampusApp': './src/CampusApp.tsx',
       },
       remotes: {
         chatbot: 'http://localhost:5003/assets/remoteEntry.js',

@@ -18,6 +18,18 @@ declare module 'gateway/GatewayApp' {
   export default GatewayApp;
 }
 
+declare module 'academic/AcademicApp' {
+  import { ComponentType } from 'react';
+  const AcademicApp: ComponentType<{ activeTab?: string; token?: string }>;
+  export default AcademicApp;
+}
+
+declare module 'gateway/CampusApp' {
+  import { ComponentType } from 'react';
+  const CampusApp: ComponentType<{ activeTab?: string; token?: string }>;
+  export default CampusApp;
+}
+
 declare module 'chatbot/ChatWidget' {
   import { ComponentType } from 'react';
   const ChatWidget: ComponentType<{ gatewayUrl?: string }>;

@@ -12,6 +12,7 @@ export default defineConfig({
       exposes: {
         './BookingApp': './src/App.tsx',
         './DashboardApp': './src/DashboardApp.tsx',
+        './AcademicApp': './src/AcademicApp.tsx',
       },
       remotes: {
         chatbot: 'http://localhost:5003/assets/remoteEntry.js',
