@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import './App.css'
+
+const ChatWidget = lazy(() => import('chatbot/ChatWidget'))
 
 interface GatewayHealth {
   status: string;
@@ -252,6 +254,9 @@ function App() {
           </div>
         )}
       </div>
+      <Suspense fallback={null}>
+        <ChatWidget gatewayUrl="http://localhost:3000" />
+      </Suspense>
     </div>
   )
 }

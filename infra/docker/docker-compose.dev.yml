@@ -38,6 +38,31 @@ services:
     networks:
       - nexus-network
 
+  # MS-08: AI Agent / Orchestrator (Python FastAPI)
+  ms-08-ai-agent:
+    build:
+      context: ../../services/ms-08-ai-agent
+      dockerfile: dockerfile
+    container_name: nexus-ms-08-ai-agent
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - ENV=development
+      - REDIS_URL=redis://redis-cache:6379
+      - GATEWAY_URL=http://ms-01-gateway:3000
+      - CATALOG_GRPC_URL=ms-11-catalog:50052
+      - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/UCE-Nexus/protocol/openid-connect/certs
+      - DATABASE_URL=postgresql://uce:password@postgres-app:5432/uce_nexus_dev
+    env_file:
+      - ../../services/ms-08-ai-agent/.env
+    depends_on:
+      - redis-cache
+      - postgres-app
+      - keycloak
+    networks:
+      - nexus-network
+
   # ==========================================
   # 2. BASES DE DATOS DE NEGOCIO (Req 11)
   # ==========================================
@@ -62,6 +87,18 @@ services:
       POSTGRES_DB: uce_catalog_dev
     ports:
       - "5433:5432"
+    networks:
+      - nexus-network
+
+  postgres-enrollment:
+    image: postgres:15-alpine
+    container_name: nexus-db-enrollment
+    environment:
+      POSTGRES_USER: enrollment_user
+      POSTGRES_PASSWORD: enrollment_password
+      POSTGRES_DB: uce_enrollment_dev
+    ports:
+      - "5434:5432"
     networks:
       - nexus-network
 

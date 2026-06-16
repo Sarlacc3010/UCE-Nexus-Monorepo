@@ -47,9 +47,12 @@ services:
       - NODE_ENV=production
       - BOOKING_SERVICE_URL=ms-06-booking:50051
       - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/UCE-Nexus/protocol/openid-connect/certs
+      - ENROLLMENT_SERVICE_URL=http://ms-03-enrollment:3001
+      - AI_AGENT_URL=http://ms-08-ai-agent:8001
     depends_on:
       - keycloak
       - ms-06-booking
+      - ms-03-enrollment
     networks:
       - nexus-network
 
@@ -93,6 +96,52 @@ services:
       - DATABASE_URL=postgres://catalog_user:catalog_password@postgres-catalog:5432/uce_catalog_dev
     depends_on:
       - postgres-catalog
+    networks:
+      - nexus-network
+
+  # MS-03: Enrollment and Academic Service (Node.js/Express)
+  ms-03-enrollment:
+    image: ${DOCKER_HUB_USER:-abel3010}/ms-03-enrollment:${IMAGE_TAG:-latest}
+    container_name: nexus-ms-03-enrollment
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://enrollment_user:enrollment_password@postgres-enrollment:5432/uce_enrollment_prod
+    depends_on:
+      - postgres-enrollment
+    networks:
+      - nexus-network
+
+  # MS-08: AI Agent / Orchestrator (Python FastAPI)
+  ms-08-ai-agent:
+    image: ${DOCKER_HUB_USER:-abel3010}/ms-08-ai-agent:${IMAGE_TAG:-latest}
+    container_name: nexus-ms-08-ai-agent
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - ENV=production
+      - REDIS_URL=redis://redis-cache:6379
+      - GATEWAY_URL=http://ms-01-gateway:3000
+      - CATALOG_GRPC_URL=ms-11-catalog:50052
+      - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/UCE-Nexus/protocol/openid-connect/certs
+      - DATABASE_URL=postgresql://uce:password@postgres-app:5432/uce_nexus_prod
+      # Credenciales inyectadas desde el entorno de producción
+      - GROQ_API_KEY
+      - GEMINI_API_KEY
+      - OPENROUTER_API_KEY
+      - B2_ENDPOINT_URL
+      - B2_KEY_ID
+      - B2_APPLICATION_KEY
+      - B2_BUCKET_NAME
+    depends_on:
+      - redis-cache
+      - postgres-app
+      - keycloak
     networks:
       - nexus-network
 
@@ -178,6 +227,21 @@ services:
       - pg-catalog-data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
+    networks:
+      - nexus-network
+
+  postgres-enrollment:
+    image: postgres:15-alpine
+    container_name: nexus-db-enrollment
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: enrollment_user
+      POSTGRES_PASSWORD: enrollment_password
+      POSTGRES_DB: uce_enrollment_prod
+    volumes:
+      - pg-enrollment-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
     networks:
       - nexus-network
 
@@ -271,6 +335,8 @@ volumes:
   pg-app-data:
     driver: local
   pg-catalog-data:
+    driver: local
+  pg-enrollment-data:
     driver: local
   mongo-data:
     driver: local

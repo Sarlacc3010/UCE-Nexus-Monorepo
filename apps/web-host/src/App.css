@@ -1,369 +1,608 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
 
 :root {
-  --siu-blue: #0d3b8e;
-  --siu-blue-hover: #1e4b9e;
-  --siu-red: #b3001b;
-  --siu-red-hover: #900015;
-  --bg-color: #f4f6f8;
-  --text-dark: #111827;
-  --text-light: #6b7280;
-  --border-color: #e5e7eb;
+  --uce-blue: #0d3b8e;
+  --uce-blue-hover: #174ea6;
+  --uce-blue-light: #eff6ff;
+  --uce-blue-text: #1d4ed8;
+  --uce-red: #e11d48;
+  --uce-red-hover: #be123c;
+  --bg-color: #f1f5f9;
+  --border-color: #e2e8f0;
+  --text-dark: #1e293b;
+  --text-light: #64748b;
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-dark);
 }
 
-.dashboard-layout {
+/* GENERAL LAYOUT SHELL */
+.nexus-shell-container {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background-color: var(--bg-color);
 }
 
-/* SIDEBAR SIU */
-.siu-sidebar {
-  width: 260px;
-  background-color: var(--siu-blue);
+/* HEADER SUPERIOR */
+.nexus-header {
+  width: 100%;
+  height: 76px;
+  background-color: var(--uce-blue);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
   color: white;
+  z-index: 30;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.nexus-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  user-select: none;
+}
+
+.nexus-logo-circle {
+  background-color: white;
+  padding: 4px;
+  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.nexus-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.nexus-header-divider {
+  height: 40px;
+  width: 1px;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.nexus-header-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.nexus-header-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  line-height: 1.2;
+}
+
+.nexus-header-subtitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.nexus-header-quote {
+  font-size: 10px;
+  font-style: italic;
+  font-family: Georgia, serif;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 1px;
+}
+
+.nexus-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nexus-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 6px 16px;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+}
+
+.nexus-profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #dbeafe;
+  color: var(--uce-blue);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.nexus-profile-info {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+}
+
+.nexus-profile-name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.nexus-profile-role {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: capitalize;
+  margin-top: 1px;
+}
+
+.nexus-btn-logout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--uce-red);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  box-shadow: 0 2px 4px rgba(225, 29, 72, 0.2);
+}
+
+.nexus-btn-logout:hover {
+  background-color: var(--uce-red-hover);
+}
+
+.nexus-btn-logout:active {
+  transform: translateY(1px);
+}
+
+/* SHELL MIDDLE AREA */
+.nexus-shell-middle {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* SIDEBAR LATERAL */
+.nexus-sidebar {
+  width: 260px;
+  background-color: white;
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  box-shadow: 4px 0 15px rgba(0,0,0,0.05);
   z-index: 10;
-  transition: all 0.3s ease;
+  height: 100%;
 }
 
-.sidebar-logo-section {
-  padding: 30px 24px 40px 24px;
-}
-
-.sidebar-logo-section h2 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-
-.sidebar-subtitle {
-  font-size: 11px;
-  opacity: 0.8;
-  display: block;
-  margin-top: 4px;
-  font-weight: 500;
-}
-
-.sidebar-nav {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 0 16px;
-  gap: 8px;
-}
-
-.nav-item {
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.8);
-  padding: 12px 16px;
-  border-radius: 8px;
-  text-align: left;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
+.nexus-sidebar-title-bar {
+  height: 52px;
+  background: linear-gradient(to right, #2563eb, #1e40af);
   display: flex;
   align-items: center;
-  transition: all 0.2s ease;
+  padding: 0 20px;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
 }
 
-.nav-icon {
-  margin-right: 12px;
+.nexus-sidebar-nav {
+  flex: 1;
+  padding: 16px 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nexus-nav-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.nexus-nav-group-header {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 8px 12px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.nexus-nav-group-header:hover {
+  background-color: #f1f5f9;
+  color: var(--text-dark);
+}
+
+.nexus-nav-group-header .chevron-icon {
+  transition: transform 0.2s ease;
+  color: var(--text-light);
+}
+
+.nexus-nav-group-header .chevron-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.nexus-nav-group-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.nexus-nav-group-content.collapsed {
+  display: none;
+}
+
+.nexus-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #475569;
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.nexus-nav-item:hover {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.nexus-nav-item.active {
+  background-color: var(--uce-blue-light);
+  color: var(--uce-blue-text);
+  font-weight: 600;
+}
+
+.nexus-nav-item-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.8;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  opacity: 0.85;
 }
 
-.nav-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.nav-item.active {
-  background-color: white;
-  color: var(--siu-blue);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.nav-item.active .nav-icon {
+.nexus-nav-item.active .nexus-nav-item-icon {
   opacity: 1;
 }
 
-.sidebar-user-profile {
-  padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.sidebar-user-profile:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.user-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
-  margin-right: 12px;
-}
-
-.user-info {
+/* SUBMENU CERTIFICADOS */
+.nexus-nav-submenu {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  margin-left: 20px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border-color);
 }
 
-.user-name {
-  font-size: 14px;
+.nexus-nav-subitem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: #64748b;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.nexus-nav-subitem:hover {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.nexus-nav-subitem.active {
+  color: var(--uce-blue-text);
   font-weight: 600;
 }
 
-.user-role {
-  font-size: 12px;
-  opacity: 0.8;
+.nexus-nav-subitem::before {
+  content: "○";
+  font-size: 10px;
+  opacity: 0.6;
 }
 
-/* MAIN CONTENT */
-.main-content {
-  flex-grow: 1;
+.nexus-nav-subitem.active::before {
+  content: "●";
+  opacity: 1;
+}
+
+/* MAIN CONTENT AREA */
+.nexus-main-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+  background-color: var(--bg-color);
 }
 
-.siu-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 32px 40px;
-  background-color: transparent;
-}
-
-.header-greeting h1 {
-  margin: 0 0 6px 0;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-dark);
-}
-
-.header-greeting p {
-  margin: 0;
-  font-size: 14px;
-  color: var(--text-light);
-}
-
-.btn-notifications {
-  background-color: var(--siu-red);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  transition: background-color 0.2s, transform 0.1s;
-  box-shadow: 0 4px 12px rgba(179, 0, 27, 0.2);
-}
-
-.btn-notifications:hover {
-  background-color: var(--siu-red-hover);
-  transform: translateY(-1px);
-}
-
-.btn-notifications:active {
-  transform: translateY(0);
-}
-
-.mfe-viewport-container {
-  flex-grow: 1;
+.nexus-viewport-container {
+  flex: 1;
   overflow-y: auto;
-  padding: 0 40px 40px 40px;
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* Coming Soon */
-.coming-soon-container {
+/* FOOTER INFERIOR */
+.nexus-footer {
+  width: 100%;
+  height: 48px;
+  background-color: var(--uce-blue);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  color: white;
+  z-index: 20;
+  flex-shrink: 0;
+}
+
+.nexus-footer-left {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--text-light);
 }
 
-.coming-soon-container h3 {
-  color: var(--text-dark);
-  font-size: 20px;
-  margin-bottom: 8px;
-}
-
-/* Animations */
-.animate-fade-in {
-  animation: fadeIn 0.4s ease forwards;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.mfe-loader {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 50vh;
-}
-
-.loader-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(13, 59, 142, 0.2);
-  border-left-color: var(--siu-blue);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.loader-text {
-  color: var(--siu-blue);
+.nexus-footer-copyright {
+  font-size: 11px;
   font-weight: 500;
 }
 
-/* LOGIN PREMIUM (Mantenido y adaptado) */
-.login-container {
-  height: 100vh;
+.nexus-footer-reserved {
+  font-size: 9px;
+  opacity: 0.6;
+}
+
+.nexus-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nexus-social-link {
+  color: rgba(255, 255, 255, 0.7);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-color);
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.nexus-social-link:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  transform: scale(1.1);
+}
+
+/* LOGIN PREMIUM DESIGN */
+.nexus-login-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f4f6f8;
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-.login-card {
-  background: white;
+.nexus-login-blob-1 {
+  display: none;
+}
+
+.nexus-login-blob-2 {
+  display: none;
+}
+
+.nexus-login-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   padding: 40px;
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  border-radius: 20px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   z-index: 10;
-}
-
-.login-header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.login-logo {
-  width: 60px;
-  height: 60px;
-  background-color: var(--siu-blue);
-  color: white;
-  border-radius: 16px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.nexus-login-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.nexus-login-logo-container {
+  display: flex;
   justify-content: center;
-  font-size: 32px;
-  font-weight: 700;
-  margin: 0 auto 16px auto;
+  margin-bottom: 16px;
 }
 
-.login-title {
+.nexus-login-logo-img {
+  width: 80px;
+  height: auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.nexus-login-title {
+  color: var(--uce-blue);
   font-size: 24px;
-  margin: 0 0 4px 0;
-  color: var(--text-dark);
+  font-weight: 700;
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: 0.5px;
 }
 
-.login-subtitle {
-  font-size: 14px;
+.nexus-login-subtitle {
   color: var(--text-light);
+  font-size: 13.5px;
+  font-weight: 500;
+  margin-top: 4px;
 }
 
-.form-group {
-  margin-bottom: 20px;
+.nexus-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.form-label {
-  display: block;
+.nexus-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nexus-form-label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-dark);
-  margin-bottom: 8px;
+  color: #334155;
 }
 
-.form-input {
+.nexus-form-input {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid var(--border-color);
+  border: 1px solid #cbd5e1;
+  background-color: rgba(255, 255, 255, 0.8);
+  color: var(--text-dark);
   border-radius: 8px;
   font-size: 14px;
+  transition: all 0.2s ease;
   box-sizing: border-box;
-  transition: border-color 0.2s, box-shadow 0.2s;
   font-family: 'Inter', sans-serif;
 }
 
-.form-input:focus {
+.nexus-form-input:focus {
   outline: none;
-  border-color: var(--siu-blue);
-  box-shadow: 0 0 0 3px rgba(13, 59, 142, 0.1);
+  border-color: var(--uce-blue);
+  box-shadow: 0 0 0 3px rgba(13, 59, 142, 0.15);
+  background-color: white;
 }
 
-.login-button {
-  width: 100%;
-  padding: 14px;
-  background-color: var(--siu-blue);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  margin-top: 10px;
-}
-
-.login-button:hover {
-  background-color: var(--siu-blue-hover);
-}
-
-.login-error {
+.nexus-login-error {
   background-color: #fef2f2;
   color: #b91c1c;
   padding: 12px;
   border-radius: 8px;
-  font-size: 13px;
-  margin-bottom: 20px;
+  font-size: 12.5px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 8px;
+  border: 1px solid #fee2e2;
+  box-sizing: border-box;
+}
+
+.nexus-login-btn {
+  width: 100%;
+  height: 48px;
+  background-color: var(--uce-blue);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(13, 59, 142, 0.2);
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nexus-login-btn:hover {
+  background-color: var(--uce-blue-hover);
+  box-shadow: 0 6px 12px -1px rgba(13, 59, 142, 0.3);
+}
+
+.nexus-login-btn:active {
+  transform: translateY(1px);
+}
+
+.nexus-login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* LOADER IN LOGGING */
+.nexus-loader-spin {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-left-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* CHAT WIDGET OVERRIDES */
+.nexus-shell-container .chat-widget-container {
+  z-index: 40;
 }
