@@ -13,7 +13,13 @@ export default defineConfig({
         './BookingApp': './src/App.tsx',
         './DashboardApp': './src/DashboardApp.tsx',
       },
-      shared: ['react', 'react-dom']
+      remotes: {
+        chatbot: 'http://localhost:5003/assets/remoteEntry.js',
+      },
+      shared: {
+        react: { singleton: true, requiredVersion: '^19.2.6' },
+        'react-dom': { singleton: true, requiredVersion: '^19.2.6' }
+      } as any
     })
   ],
   build: {
@@ -22,7 +28,20 @@ export default defineConfig({
     minify: false,
     cssCodeSplit: false
   },
-  // Fijamos el puerto en 5001
-  server: { port: 5001, strictPort: true },
-  preview: { port: 5001, strictPort: true }
+  server: {
+    port: 5001,
+    strictPort: true,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+    }
+  },
+  preview: {
+    port: 5001,
+    strictPort: true,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+    }
+  }
 })

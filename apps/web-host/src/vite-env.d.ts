@@ -17,3 +17,9 @@ declare module 'gateway/GatewayApp' {
   const GatewayApp: ComponentType;
   export default GatewayApp;
 }
+
+declare module 'chatbot/ChatWidget' {
+  import { ComponentType } from 'react';
+  const ChatWidget: ComponentType<{ gatewayUrl?: string }>;
+  export default ChatWidget;
+}
