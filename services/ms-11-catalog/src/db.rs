@@ -53,7 +53,16 @@ impl Db {
                 VALUES 
                 ('LAB-Cisco-01', 'Laboratorio de Cisco & Redes', 'Bloque B, Piso 3, Aula 302', 30, ARRAY['Routers Cisco 2911', 'Switches Catalyst 2960', 'Servidor Rack TFTP'], true),
                 ('LAB-Comp-02', 'Laboratorio de Cómputo General', 'Bloque A, Piso 1, Aula 105', 40, ARRAY['PCs Intel i7', 'Proyector EPSON', 'Pizarra Interactiva'], true),
-                ('AUD-Principal', 'Auditorio General', 'Edificio Central, Piso 1', 150, ARRAY['Sistema de Audio Surround', 'Proyector Láser 4K', 'Micrófonos Inalámbricos'], true);
+                ('AUD-Principal', 'Auditorio General', 'Edificio Central, Piso 1', 150, ARRAY['Sistema de Audio Surround', 'Proyector Láser 4K', 'Micrófonos Inalámbricos'], true),
+                ('LAB-Comp-01', 'Laboratorio de Computación 1', 'Edificio de Laboratorios FICA, Piso 3', 45, ARRAY['PCs Intel Core i5', 'Proyector', 'Pizarra'], true),
+                ('LAB-Comp-03', 'Laboratorio de Computación 3', 'Edificio de Laboratorios FICA, Piso 3', 35, ARRAY['PCs Intel Core i5', 'Proyector'], true),
+                ('LAB-Comp-04', 'Laboratorio de Computación 4', 'Edificio de Laboratorios FICA, Piso 3', 50, ARRAY['PCs Intel Core i7', 'Proyector'], true),
+                ('LAB-Comp-05', 'Laboratorio de Computación 5', 'Edificio de Laboratorios FICA, Piso 3', 30, ARRAY['PCs Intel Core i5', 'Proyector'], true),
+                ('LAB-Comp-06', 'Laboratorio de Computación 6', 'Edificio de Laboratorios FICA, Piso 3', 55, ARRAY['PCs Intel Core i7', 'Proyector'], true),
+                ('LAB-Comp-07', 'Laboratorio de Computación 7', 'Edificio de Laboratorios FICA, Piso 3', 60, ARRAY['PCs Intel Core i7', 'Proyector'], true),
+                ('LAB-Comp-08', 'Laboratorio de Computación 8', 'Edificio de Laboratorios FICA, Piso 3', 45, ARRAY['PCs Intel Core i5', 'Proyector'], true),
+                ('LAB-Redes', 'Laboratorio de Redes', 'Edificio de Laboratorios FICA, Piso 3', 40, ARRAY['Cisco Routers', 'Switches Catalyst', 'Servidores rack'], true),
+                ('LAB-Civil-02', 'Laboratorio de Civil 2', 'Edificio de Laboratorios FICA, Piso 2', 40, ARRAY['Estaciones de Trabajo CAD', 'Plotter', 'Proyector'], true);
                 "#
             )
             .execute(&self.pool)
