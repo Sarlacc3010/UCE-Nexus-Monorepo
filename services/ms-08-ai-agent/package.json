@@ -1,0 +1,14 @@
+{
+  "name": "ms-08-ai-agent",
+  "version": "1.0.0",
+  "description": "UCE-Nexus AI Orchestrator Agent — Multi-LLM chatbot with RAG and tool calling",
+  "scripts": {
+    "dev": "uvicorn main:app --reload --host 0.0.0.0 --port 8001",
+    "start": "uvicorn main:app --host 0.0.0.0 --port 8001",
+    "test": "node -e \"const { execSync } = require('child_process'); const fs = require('fs'); let cmd = 'pytest test_main.py -v'; if (fs.existsSync('venv/Scripts/pytest.exe')) { cmd = 'venv\\\\\\\\Scripts\\\\\\\\pytest test_main.py -v'; } else if (fs.existsSync('venv/bin/pytest')) { cmd = 'venv/bin/pytest test_main.py -v'; } try { execSync(cmd, { stdio: 'inherit', env: { ...process.env, USERNAME: process.env.USERNAME || 'testuser', USER: process.env.USER || 'testuser' } }); } catch (e) { process.exit(1); }\"",
+    "install": "pip install -r requirements.txt"
+  },
+  "turbo": {
+    "extends": ["//"]
+  }
+}
