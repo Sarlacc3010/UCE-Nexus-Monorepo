@@ -81,11 +81,26 @@ export default function AcademicApp({ activeTab: propActiveTab, token: propToken
   const renderTabContent = () => {
     switch (activeTab) {
       case 'home':
-      case 'dashboard':
         return <DashboardApp />;
       case 'matriculacion':
         return <BookingApp />;
-      default:
+      default: {
+        const getTabTitle = (tab: string) => {
+          const titles: Record<string, string> = {
+            dashboard: 'Horario matrícula vigente',
+            matriculas: 'Matrículas',
+            calificaciones: 'Calificaciones',
+            malla: 'Malla Curricular',
+            seguro_vida: 'Seguro de vida',
+            matricula_vigente: 'Matrícula vigente',
+            auditorio: 'Reservas de Auditorio',
+            canchas: 'Reservas de Canchas',
+            tercera_matricula: 'Tercera matrícula y excepcionalidad',
+            retiro: 'Retiro de Asignaturas'
+          };
+          return titles[tab] || tab;
+        };
+
         return (
           <div className="coming-soon-container" style={{
             display: 'flex',
@@ -103,10 +118,11 @@ export default function AcademicApp({ activeTab: propActiveTab, token: propToken
               Módulo Académico en Construcción
             </h3>
             <p style={{ color: '#64748b', fontSize: '14px', maxWidth: '400px', lineHeight: 1.5 }}>
-              La funcionalidad para la sección "{activeTab}" está en desarrollo para el microfrontend académico y estará disponible pronto.
+              La funcionalidad para la sección "{getTabTitle(activeTab)}" está en desarrollo para el microfrontend académico y estará disponible pronto.
             </p>
           </div>
         );
+      }
     }
   };
 
