@@ -3,8 +3,8 @@ name: PR Flow Automation
 on:
   push:
     branches:
-      - dev
-      - qa
+      - Dev
+      - QA
 
 permissions:
   pull-requests: write
@@ -13,7 +13,7 @@ permissions:
 jobs:
   auto-pr-dev-to-qa:
     name: Auto PR Dev to QA
-    if: github.ref_name == 'dev'
+    if: github.ref_name == 'Dev'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -25,23 +25,23 @@ jobs:
         run: |
           echo "==== AUTO-PR: DEV TO QA ===="
           
-          # Verificar si ya existe un PR abierto de dev a qa
-          EXISTING_PR=$(gh pr list --base qa --head dev --json number --jq '.[0].number')
+          # Verificar si ya existe un PR abierto de Dev a QA
+          EXISTING_PR=$(gh pr list --base QA --head Dev --json number --jq '.[0].number')
           
           if [ -z "$EXISTING_PR" ]; then
-            echo "No se encontró un PR abierto de dev a qa. Creando uno nuevo..."
+            echo "No se encontró un PR abierto de Dev a QA. Creando uno nuevo..."
             gh pr create \
-              --base qa \
-              --head dev \
-              --title "Automatic PR: dev -> qa" \
-              --body "PR automático creado por GitHub Actions tras un commit en la rama dev."
+              --base QA \
+              --head Dev \
+              --title "Automatic PR: Dev -> QA" \
+              --body "PR automático creado por GitHub Actions tras un commit en la rama Dev."
           else
-            echo "Ya existe un PR abierto de dev a qa (PR #$EXISTING_PR). No se requiere crear otro."
+            echo "Ya existe un PR abierto de Dev a QA (PR #$EXISTING_PR). No se requiere crear otro."
           fi
 
   auto-pr-qa-to-main:
     name: Auto PR QA to Main
-    if: github.ref_name == 'qa'
+    if: github.ref_name == 'QA'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -53,17 +53,17 @@ jobs:
         run: |
           echo "==== AUTO-PR: QA TO MAIN (PROD) ===="
           
-          # Verificar si ya existe un PR abierto de qa a main
-          EXISTING_PR=$(gh pr list --base main --head qa --json number --jq '.[0].number')
+          # Verificar si ya existe un PR abierto de QA a main
+          EXISTING_PR=$(gh pr list --base main --head QA --json number --jq '.[0].number')
           
           if [ -z "$EXISTING_PR" ]; then
-            echo "No se encontró un PR abierto de qa a main. Creando uno nuevo y asignando revisor..."
+            echo "No se encontró un PR abierto de QA a main. Creando uno nuevo y asignando revisor..."
             gh pr create \
               --base main \
-              --head qa \
-              --title "Automatic PR: qa -> main (Prod)" \
-              --body "PR automático creado por GitHub Actions tras verificar las pruebas en la rama qa." \
+              --head QA \
+              --title "Automatic PR: QA -> main (Prod)" \
+              --body "PR automático creado por GitHub Actions tras verificar las pruebas en la rama QA." \
               --reviewer "JuanGuevara90"
           else
-            echo "Ya existe un PR abierto de qa a main (PR #$EXISTING_PR). No se requiere crear otro."
+            echo "Ya existe un PR abierto de QA a main (PR #$EXISTING_PR). No se requiere crear otro."
           fi

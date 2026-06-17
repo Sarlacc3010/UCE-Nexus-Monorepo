@@ -23,6 +23,7 @@ export default defineConfig({
     })
   ],
   build: {
+    base: '/campus-mf/',
     modulePreload: false,
     target: 'esnext',
     minify: false,
