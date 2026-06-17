@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - qa
-      - main
+    tags:
+      - 'v*'
 
 env:
   DOCKER_HUB_TAG: qa
@@ -24,10 +25,10 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           
-          # Determinar variables según la rama (QA o Main/Production)
-          if [ "${{ github.ref_name }}" = "main" ]; then
+          # Determinar variables según la rama (QA o Tag de Versión/Production)
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
             echo "DEPLOY_ENV=Production" >> $GITHUB_ENV
-            echo "DOCKER_HUB_TAG=prod" >> $GITHUB_ENV
+            echo "DOCKER_HUB_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
             echo "BASTION_IP=${{ secrets.PROD_BASTION_IP }}" >> $GITHUB_ENV
             echo "APP_PRIVATE_IP=${{ secrets.PROD_APP_PRIVATE_IP }}" >> $GITHUB_ENV
             echo "${{ secrets.PROD_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
