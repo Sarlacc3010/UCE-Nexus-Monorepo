@@ -2,7 +2,8 @@ name: UCE-Nexus CI Pipeline
 
 on:
   push:
-    branches: [ "main", "dev", "qa" ]
+    branches: [ "dev", "qa" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main", "dev", "qa" ]
   workflow_dispatch:
@@ -148,8 +149,8 @@ jobs:
 
       - name: Set Docker Image Tag
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "IMAGE_TAG=prod" >> $GITHUB_ENV
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
           elif [ "${{ github.ref_name }}" = "qa" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
@@ -191,8 +192,8 @@ jobs:
 
       - name: Set Docker Image Tag
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "IMAGE_TAG=prod" >> $GITHUB_ENV
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
           elif [ "${{ github.ref_name }}" = "qa" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
@@ -234,8 +235,8 @@ jobs:
 
       - name: Set Docker Image Tag
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "IMAGE_TAG=prod" >> $GITHUB_ENV
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
           elif [ "${{ github.ref_name }}" = "qa" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
@@ -277,8 +278,8 @@ jobs:
 
       - name: Set Docker Image Tag
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "IMAGE_TAG=prod" >> $GITHUB_ENV
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
           elif [ "${{ github.ref_name }}" = "qa" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
@@ -320,8 +321,8 @@ jobs:
 
       - name: Set Docker Image Tag
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "IMAGE_TAG=prod" >> $GITHUB_ENV
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
           elif [ "${{ github.ref_name }}" = "qa" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
@@ -363,8 +364,8 @@ jobs:
 
       - name: Set Docker Image Tag
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "IMAGE_TAG=prod" >> $GITHUB_ENV
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
           elif [ "${{ github.ref_name }}" = "qa" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
@@ -406,8 +407,8 @@ jobs:
 
       - name: Set Docker Image Tag
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "IMAGE_TAG=prod" >> $GITHUB_ENV
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
           elif [ "${{ github.ref_name }}" = "qa" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
@@ -449,8 +450,8 @@ jobs:
 
       - name: Set Docker Image Tag
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "IMAGE_TAG=prod" >> $GITHUB_ENV
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
           elif [ "${{ github.ref_name }}" = "qa" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
@@ -492,8 +493,8 @@ jobs:
 
       - name: Set Docker Image Tag
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "IMAGE_TAG=prod" >> $GITHUB_ENV
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
           elif [ "${{ github.ref_name }}" = "qa" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
