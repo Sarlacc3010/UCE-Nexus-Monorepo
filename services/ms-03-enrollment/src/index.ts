@@ -2,7 +2,7 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { initDb, pool } from './db';
+import { initDb, pool, catalogPool } from './db';
 
 dotenv.config();
 
@@ -19,6 +19,19 @@ app.get('/health', (req: Request, res: Response) => {
     service: 'ms-03-enrollment',
     database: 'connected'
   });
+});
+
+// 0. Obtener Laboratorios desde base de datos de catálogo
+app.get('/api/laboratories', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await catalogPool.query(
+      'SELECT legacy_id AS id, code, name, capacity, location FROM laboratories WHERE is_active = true ORDER BY name ASC'
+    );
+    res.json(result.rows);
+  } catch (error: any) {
+    console.error('Error fetching laboratories:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 // 1. Obtener Semestres

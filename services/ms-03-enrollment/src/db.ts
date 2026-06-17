@@ -8,6 +8,12 @@ export const pool = new Pool({
   connectionString
 });
 
+const catalogConnectionString = process.env.CATALOG_DATABASE_URL || 'postgresql://catalog_user:catalog_password@postgres-catalog:5432/uce_catalog_dev';
+
+export const catalogPool = new Pool({
+  connectionString: catalogConnectionString
+});
+
 export async function initDb() {
   console.log('🟢 Conectando a la base de datos de Matrículas/Académico...');
   let retries = 5;

@@ -201,8 +201,8 @@ app.post('/api/refresh', async (req: Request, res: Response): Promise<void> => {
 app.post('/api/reservas', authenticateJWT, requireRole('user'), (req: Request, res: Response) => {
     const decoded = (req as any).user;
     
-    // Extrae el ID de usuario desde el token decodificado de Keycloak (sub o username)
-    const userId = decoded?.sub || decoded?.preferred_username || "est-12345";
+    // Extrae el ID de usuario desde el token decodificado de Keycloak (email, username o sub)
+    const userId = decoded?.email || decoded?.preferred_username || decoded?.sub || "est-12345";
 
     const grpcRequest = {
         user_id: userId,

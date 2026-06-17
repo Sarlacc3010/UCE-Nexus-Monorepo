@@ -25,6 +25,7 @@ function App() {
   const [token, setToken] = useState('');
   const [viewMode, setViewMode] = useState<'catalog' | 'booking'>('catalog');
   
+  const [labs, setLabs] = useState<any[]>(LABS_CATALOG);
   const [selectedLab, setSelectedLab] = useState(LABS_CATALOG[0]!);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]!);
   const [time, setTime] = useState('10:00');
@@ -49,6 +50,30 @@ function App() {
     } else {
       setLogs('🟢 Sesión activa detectada desde el portal. Listo para reservar.');
     }
+  }, []);
+
+  // Consultar laboratorios reales desde la base de datos
+  useEffect(() => {
+    const fetchLabs = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/academic/laboratories');
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.length > 0) {
+            const formattedLabs = data.map((l: any) => ({
+              ...l,
+              hours: '07:00 - 19:00'
+            }));
+            setLabs(formattedLabs);
+            setSelectedLab(formattedLabs[0]);
+          }
+        }
+      } catch (err) {
+        console.error('Error al consultar laboratorios en BD:', err);
+      }
+    };
+
+    fetchLabs();
   }, []);
 
   // Consultar las asignaturas desde la base de datos a través del gateway (MS-03)
@@ -164,7 +189,7 @@ function App() {
     }
   };
 
-  const startBooking = (lab: typeof LABS_CATALOG[number]) => {
+  const startBooking = (lab: any) => {
     setSelectedLab(lab);
     setViewMode('booking');
     setLogs(`Listo para reservar el ${lab.name}.`);
@@ -188,7 +213,7 @@ function App() {
           )}
 
           <div className="catalog-grid">
-            {LABS_CATALOG.map((lab) => (
+            {labs.map((lab) => (
               <div className="lab-card" key={lab.code}>
                 <div className="lab-card-top-bar"></div>
                 <div className="lab-card-header">
@@ -264,13 +289,13 @@ function App() {
                   id="select-lab"
                   value={selectedLab.code}
                   onChange={(e) => {
-                    const found = LABS_CATALOG.find(l => l.code === e.target.value);
+                    const found = labs.find(l => l.code === e.target.value);
                     if (found) setSelectedLab(found);
                   }}
                   className="booking-form-select"
                   required
                 >
-                  {LABS_CATALOG.map(l => (
+                  {labs.map(l => (
                     <option key={l.code} value={l.code}>{l.name}</option>
                   ))}
                 </select>
