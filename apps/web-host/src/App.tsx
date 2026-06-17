@@ -126,7 +126,7 @@ function App() {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/refresh', {
+      const response = await fetch('/api/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -181,7 +181,7 @@ function App() {
 
     try {
       // Intentar login por API Gateway
-      const response = await fetch('http://localhost:3000/api/login', {
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -611,7 +611,7 @@ function App() {
 
       {/* AI Agent Chat Widget — visible en todas las páginas */}
       <Suspense fallback={null}>
-        <ChatWidget gatewayUrl={import.meta.env.VITE_GATEWAY_URL || 'http://localhost:3000'} />
+        <ChatWidget gatewayUrl={import.meta.env.VITE_GATEWAY_URL || ''} />
       </Suspense>
     </div>
   )

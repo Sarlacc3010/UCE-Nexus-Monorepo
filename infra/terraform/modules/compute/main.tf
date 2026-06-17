@@ -238,19 +238,30 @@ resource "aws_instance" "db_server" {
   # Script de inicio para instalar Docker, formatear/montar EBS persistente y configurar Swap
   user_data = base64encode(<<-EOF
               #!/bin/bash
-              DEVICE="/dev/sdf"
-              # Esperar a que el volumen EBS esté disponible
-              while [ ! -b $DEVICE ] && [ ! -b /dev/xvdf ]; do
+              # Buscar dinamicamente el dispositivo EBS no montado
+              DEVICE=""
+              for i in {1..30}; do
+                for dev in /dev/nvme[0-9]n1 /dev/xvd[f-z] /dev/sd[f-z]; do
+                  if [ -b "$dev" ]; then
+                    # Verificar si no esta montado y no es la particion root
+                    if ! lsblk -no MOUNTPOINTS "$dev" | grep -q '/'; then
+                      DEVICE="$dev"
+                      break 2
+                    fi
+                  fi
+                done
                 sleep 2
               done
-              
-              # En Nitro de AWS Academy /dev/sdf se mapea a /dev/xvdf
-              if [ -b /dev/xvdf ]; then
-                DEVICE="/dev/xvdf"
+
+              if [ -z "$DEVICE" ]; then
+                echo "ERROR: No EBS device found to mount!"
+                exit 1
               fi
 
+              echo "Selected device: $DEVICE"
+
               # Formatear si es necesario
-              if [ -z "$(file -s $DEVICE | grep ext4)" ]; then
+              if ! file -s $DEVICE | grep -q ext4; then
                 mkfs -t ext4 $DEVICE
               fi
 
@@ -318,15 +329,15 @@ resource "aws_lb" "app_alb" {
   }
 }
 
-# Target Group para el Gateway/App de Nginx (Puerto 80)
+# Target Group para el Gateway/App de Nginx (Puerto 5000)
 resource "aws_lb_target_group" "app_tg" {
-  name     = "${var.project_name}-${lower(var.environment)}-tg"
-  port     = 80
+  name     = "${var.project_name}-${lower(var.environment)}-tg-v2"
+  port     = 5000
   protocol = "HTTP"
   vpc_id   = var.vpc_id
 
   health_check {
-    path                = "/health"
+    path                = "/"
     interval            = 45
     timeout             = 5
     healthy_threshold   = 2
@@ -352,6 +363,15 @@ resource "aws_launch_template" "app" {
   image_id      = var.ami_id
   instance_type = var.instance_type
   key_name      = var.key_name
+
+  block_device_mappings {
+    device_name = "/dev/sda1"
+    ebs {
+      volume_size           = 16
+      volume_type           = "gp3"
+      delete_on_termination = true
+    }
+  }
 
   network_interfaces {
     security_groups             = [aws_security_group.app_sg.id]
@@ -389,7 +409,7 @@ resource "aws_autoscaling_group" "app_asg" {
   name                = "${aws_launch_template.app.name}-asg"
   vpc_zone_identifier = [var.subnet_id, var.subnet_b_id]
   target_group_arns   = [aws_lb_target_group.app_tg.arn]
-  health_check_type   = "ELB"
+  health_check_type   = "EC2"
 
   min_size         = 1
   max_size         = 1

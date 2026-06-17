@@ -2,10 +2,10 @@ name: UCE-Nexus CI Pipeline
 
 on:
   push:
-    branches: [ "dev", "qa" ]
+    branches: [ "Dev", "QA" ]
     tags: [ "v*" ]
   pull_request:
-    branches: [ "main", "dev", "qa" ]
+    branches: [ "main", "Dev", "QA" ]
   workflow_dispatch:
 
 env:
@@ -132,7 +132,7 @@ jobs:
   build-gateway:
     name: Build & Push Gateway (MS-01)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.gateway == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
+    if: ${{ needs.changes-detector.outputs.gateway == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -151,7 +151,7 @@ jobs:
         run: |
           if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
             echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
-          elif [ "${{ github.ref_name }}" = "qa" ]; then
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
             echo "IMAGE_TAG=latest" >> $GITHUB_ENV
@@ -175,7 +175,7 @@ jobs:
   build-booking:
     name: Build & Push Booking (MS-06)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.booking == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
+    if: ${{ needs.changes-detector.outputs.booking == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -194,7 +194,7 @@ jobs:
         run: |
           if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
             echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
-          elif [ "${{ github.ref_name }}" = "qa" ]; then
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
             echo "IMAGE_TAG=latest" >> $GITHUB_ENV
@@ -218,7 +218,7 @@ jobs:
   build-notifications:
     name: Build & Push Notifications (MS-07)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.notifications == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
+    if: ${{ needs.changes-detector.outputs.notifications == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -237,7 +237,7 @@ jobs:
         run: |
           if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
             echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
-          elif [ "${{ github.ref_name }}" = "qa" ]; then
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
             echo "IMAGE_TAG=latest" >> $GITHUB_ENV
@@ -261,7 +261,7 @@ jobs:
   build-catalog:
     name: Build & Push Catalog (MS-11)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.catalog == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
+    if: ${{ needs.changes-detector.outputs.catalog == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -280,7 +280,7 @@ jobs:
         run: |
           if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
             echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
-          elif [ "${{ github.ref_name }}" = "qa" ]; then
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
             echo "IMAGE_TAG=latest" >> $GITHUB_ENV
@@ -304,7 +304,7 @@ jobs:
   build-web-host:
     name: Build & Push Web Host
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.web_host == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
+    if: ${{ needs.changes-detector.outputs.web_host == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -323,7 +323,7 @@ jobs:
         run: |
           if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
             echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
-          elif [ "${{ github.ref_name }}" = "qa" ]; then
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
             echo "IMAGE_TAG=latest" >> $GITHUB_ENV
@@ -347,7 +347,7 @@ jobs:
   build-web-academic:
     name: Build & Push Web Academic
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.web_academic == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
+    if: ${{ needs.changes-detector.outputs.web_academic == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -366,7 +366,7 @@ jobs:
         run: |
           if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
             echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
-          elif [ "${{ github.ref_name }}" = "qa" ]; then
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
             echo "IMAGE_TAG=latest" >> $GITHUB_ENV
@@ -390,7 +390,7 @@ jobs:
   build-web-campus:
     name: Build & Push Web Campus
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.web_campus == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
+    if: ${{ needs.changes-detector.outputs.web_campus == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -409,7 +409,7 @@ jobs:
         run: |
           if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
             echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
-          elif [ "${{ github.ref_name }}" = "qa" ]; then
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
             echo "IMAGE_TAG=latest" >> $GITHUB_ENV
@@ -433,7 +433,7 @@ jobs:
   build-enrollment:
     name: Build & Push Enrollment (MS-03)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.enrollment == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
+    if: ${{ needs.changes-detector.outputs.enrollment == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -452,7 +452,7 @@ jobs:
         run: |
           if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
             echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
-          elif [ "${{ github.ref_name }}" = "qa" ]; then
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
             echo "IMAGE_TAG=latest" >> $GITHUB_ENV
@@ -476,7 +476,7 @@ jobs:
   build-ai-agent:
     name: Build & Push AI Agent (MS-08)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.ai_agent == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'qa' }}
+    if: ${{ needs.changes-detector.outputs.ai_agent == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -495,7 +495,7 @@ jobs:
         run: |
           if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
             echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
-          elif [ "${{ github.ref_name }}" = "qa" ]; then
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
             echo "IMAGE_TAG=qa" >> $GITHUB_ENV
           else
             echo "IMAGE_TAG=latest" >> $GITHUB_ENV

@@ -3,7 +3,7 @@ name: UCE-Nexus CD Deployment
 on:
   push:
     branches:
-      - qa
+      - QA
     tags:
       - 'v*'
 
