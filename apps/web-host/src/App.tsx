@@ -40,7 +40,6 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
 // Importación dinámica a través de la red (Vite Module Federation)
 const AcademicApp = lazy(() => import('academic/AcademicApp'))
 const CampusApp = lazy(() => import('gateway/CampusApp'))
-const ChatWidget = lazy(() => import('chatbot/ChatWidget'))
 
 // Comprobar si el token almacenado es válido y no está cerca de expirar (10 segundos de margen)
 const isTokenExpired = (jwtToken: string) => {
@@ -609,10 +608,6 @@ function App() {
         </div>
       </footer>
 
-      {/* AI Agent Chat Widget — visible en todas las páginas */}
-      <Suspense fallback={null}>
-        <ChatWidget gatewayUrl={import.meta.env.VITE_GATEWAY_URL || ''} />
-      </Suspense>
     </div>
   )
 }
