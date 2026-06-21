@@ -48,14 +48,13 @@ jobs:
       # ==========================================
       - name: Discover QA App Server IP via AWS CLI
         if: "!startsWith(github.ref_name, 'v')"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.QA_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.QA_AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.QA_AWS_SESSION_TOKEN }}
+          AWS_DEFAULT_REGION: us-east-1
         run: |
           pip install --quiet awscli
-          
-          # Configurar credenciales AWS temporales de QA
-          aws configure set aws_access_key_id "${{ secrets.QA_AWS_ACCESS_KEY_ID }}"
-          aws configure set aws_secret_access_key "${{ secrets.QA_AWS_SECRET_ACCESS_KEY }}"
-          aws configure set aws_session_token "${{ secrets.QA_AWS_SESSION_TOKEN }}"
-          aws configure set region us-east-1
           
           # Obtener IP privada de la instancia activa del ASG
           APP_IP=$(aws ec2 describe-instances \
@@ -71,6 +70,7 @@ jobs:
           
           echo "✅ App Server IP descubierta: $APP_IP"
           echo "APP_PRIVATE_IP=$APP_IP" >> $GITHUB_ENV
+
 
       - name: Generate SSH Config file
         run: |
