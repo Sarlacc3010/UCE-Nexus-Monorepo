@@ -206,6 +206,14 @@ resource "aws_security_group" "db_sg" {
     security_groups = [aws_security_group.app_sg.id]
   }
 
+  # Keycloak Web API (Auth Server)
+  ingress {
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app_sg.id]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
