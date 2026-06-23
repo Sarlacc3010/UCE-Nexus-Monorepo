@@ -33,6 +33,8 @@ interface CampusAppProps {
   token?: string;
 }
 
+const API_URL = import.meta.env.PROD ? '' : 'http://localhost:3000';
+
 export default function CampusApp({ activeTab: propActiveTab, token: propToken }: CampusAppProps) {
   // 1. Detect environment
   const isEmbedded = typeof propActiveTab !== 'undefined';
@@ -457,7 +459,7 @@ export default function CampusApp({ activeTab: propActiveTab, token: propToken }
 
       {/* Standalone ChatWidget */}
       <Suspense fallback={null}>
-        <ChatWidget gatewayUrl="http://localhost:3000" />
+        <ChatWidget gatewayUrl={API_URL} />
       </Suspense>
     </div>
   );
