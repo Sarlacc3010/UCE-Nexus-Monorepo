@@ -59,6 +59,8 @@ const getStudentNameFromToken = (token: string): string => {
   return 'Carlos Estudiante';
 };
 
+const API_URL = import.meta.env.PROD ? '' : 'http://localhost:3000';
+
 function DashboardApp() {
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -70,7 +72,7 @@ function DashboardApp() {
   const { data: enrollments, isLoading: loadingEnrollments } = useQuery<Enrollment[]>({
     queryKey: ['student-enrollments', studentId],
     queryFn: async () => {
-      const res = await fetch(`http://localhost:3000/api/academic/students/${studentId}/enrollments`);
+      const res = await fetch(`${API_URL}/api/academic/students/${studentId}/enrollments`);
       if (!res.ok) throw new Error('Error al obtener matriculaciones');
       return res.json();
     }
@@ -80,7 +82,7 @@ function DashboardApp() {
   const { data: schedules, isLoading: loadingSchedules } = useQuery<Schedule[]>({
     queryKey: ['academic-schedules'],
     queryFn: async () => {
-      const res = await fetch('http://localhost:3000/api/academic/schedules');
+      const res = await fetch(`${API_URL}/api/academic/schedules`);
       if (!res.ok) throw new Error('Error al obtener horarios');
       return res.json();
     }

@@ -21,6 +21,8 @@ const LABS_CATALOG = [
   { id: '12', code: 'LAB-Comp-04', name: 'Laboratorio de Computación 4', capacity: 50, location: 'Edificio de Laboratorios FICA, Piso 3', hours: '07:00 - 19:00' },
 ];
 
+const API_URL = import.meta.env.PROD ? '' : 'http://localhost:3000';
+
 function App() {
   const [token, setToken] = useState('');
   const [viewMode, setViewMode] = useState<'catalog' | 'booking'>('catalog');
@@ -56,7 +58,7 @@ function App() {
   useEffect(() => {
     const fetchLabs = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/academic/laboratories');
+        const response = await fetch(`${API_URL}/api/academic/laboratories`);
         if (response.ok) {
           const data = await response.json();
           if (data && data.length > 0) {
@@ -80,7 +82,7 @@ function App() {
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/academic/subjects');
+        const response = await fetch(`${API_URL}/api/academic/subjects`);
         if (response.ok) {
           const data = await response.json();
           setSubjects(data);
@@ -116,7 +118,7 @@ function App() {
       const horaFin = `${endTime}:00`;
 
       try {
-        const url = `http://localhost:3000/api/academic/schedules/check-conflict?lab_id=${selectedLab.id}&dia=${dia}&hora_inicio=${horaInicio}&hora_fin=${horaFin}`;
+        const url = `${API_URL}/api/academic/schedules/check-conflict?lab_id=${selectedLab.id}&dia=${dia}&hora_inicio=${horaInicio}&hora_fin=${horaFin}`;
         const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
@@ -155,7 +157,7 @@ function App() {
     const bookingDate = new Date(`${date}T${time}:00Z`).toISOString();
 
     try {
-      const response = await fetch('http://localhost:3000/api/reservas', {
+      const response = await fetch(`${API_URL}/api/reservas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -415,7 +417,7 @@ function App() {
         </div>
       )}
       <Suspense fallback={null}>
-        <ChatWidget gatewayUrl="http://localhost:3000" />
+        <ChatWidget gatewayUrl={API_URL} />
       </Suspense>
     </div>
   );

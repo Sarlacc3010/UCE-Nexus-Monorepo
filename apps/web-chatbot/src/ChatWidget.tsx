@@ -12,7 +12,7 @@ interface ChatWidgetProps {
   gatewayUrl?: string;
 }
 
-const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:3000';
+const GATEWAY_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_GATEWAY_URL || 'http://localhost:3000');
 const WELCOME_MESSAGE = `¡Hola! Soy **Nexus**, el asistente inteligente de UCE-Nexus 🎓
 
 Puedo ayudarte con:
