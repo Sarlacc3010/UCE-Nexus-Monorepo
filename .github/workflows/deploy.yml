@@ -162,6 +162,7 @@ jobs:
           # Iniciar servicios de DB
           ssh db-server "
             cd /home/ubuntu/app && \
+            docker-compose -f docker-compose.db.yml down --remove-orphans 2>/dev/null || true && \
             docker-compose -f docker-compose.db.yml up -d
           "
 
@@ -176,11 +177,14 @@ jobs:
           # Autenticar Docker en App Server
           ssh app-server "echo '${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}' | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin"
           
+          # Bajar contenedores previos para evitar KeyError: ContainerConfig en docker-compose v1
+          ssh app-server "cd /home/ubuntu/app && docker-compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true"
+          
           # Descargar y levantar microservicios pasándole la IP del DB Server
           ssh app-server "
             cd /home/ubuntu/app && \
             DOCKER_HUB_USER=${{ secrets.DOCKER_HUB_USERNAME }} IMAGE_TAG=${{ env.DOCKER_HUB_TAG }} DB_PRIVATE_IP=${{ env.DB_PRIVATE_IP }} docker-compose -f docker-compose.prod.yml pull && \
-            DOCKER_HUB_USER=${{ secrets.DOCKER_HUB_USERNAME }} IMAGE_TAG=${{ env.DOCKER_HUB_TAG }} DB_PRIVATE_IP=${{ env.DB_PRIVATE_IP }} docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            DOCKER_HUB_USER=${{ secrets.DOCKER_HUB_USERNAME }} IMAGE_TAG=${{ env.DOCKER_HUB_TAG }} DB_PRIVATE_IP=${{ env.DB_PRIVATE_IP }} docker-compose -f docker-compose.prod.yml up -d --remove-orphans --force-recreate
           "
           
           # Limpiar imágenes obsoletas
