@@ -49,32 +49,44 @@ jobs:
       - name: Discover QA App Server IP via boto3
         if: "!startsWith(github.ref_name, 'v')"
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.QA_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.QA_AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.QA_AWS_SESSION_TOKEN }}
-          AWS_DEFAULT_REGION: us-east-1
+          QA_KEY_ID: ${{ secrets.QA_AWS_ACCESS_KEY_ID }}
+          QA_SECRET: ${{ secrets.QA_AWS_SECRET_ACCESS_KEY }}
+          QA_TOKEN: ${{ secrets.QA_AWS_SESSION_TOKEN }}
         run: |
           pip install --quiet boto3
           
           APP_IP=$(python3 - <<'PYEOF'
-          import boto3, os, sys
-          ec2 = boto3.client("ec2", region_name="us-east-1")
-          resp = ec2.describe_instances(
-              Filters=[
-                  {"Name": "tag:Name",            "Values": ["uce-nexus-qa-app-asg"]},
-                  {"Name": "instance-state-name", "Values": ["running"]},
-              ]
-          )
-          reservations = resp.get("Reservations", [])
-          if not reservations or not reservations[0]["Instances"]:
-              print("ERROR: no running instance found", file=sys.stderr)
-              sys.exit(1)
-          print(reservations[0]["Instances"][0]["PrivateIpAddress"])
-          PYEOF
+import boto3, os, sys
+
+# Strip whitespace/newlines that GitHub Secrets may inject
+key_id = os.environ["QA_KEY_ID"].strip()
+secret  = os.environ["QA_SECRET"].strip()
+token   = os.environ["QA_TOKEN"].strip()
+
+session = boto3.Session(
+    aws_access_key_id=key_id,
+    aws_secret_access_key=secret,
+    aws_session_token=token,
+    region_name="us-east-1",
+)
+ec2 = session.client("ec2")
+resp = ec2.describe_instances(
+    Filters=[
+        {"Name": "tag:Name",            "Values": ["uce-nexus-qa-app-asg"]},
+        {"Name": "instance-state-name", "Values": ["running"]},
+    ]
+)
+reservations = resp.get("Reservations", [])
+if not reservations or not reservations[0]["Instances"]:
+    print("ERROR: no running instance found", file=sys.stderr)
+    sys.exit(1)
+print(reservations[0]["Instances"][0]["PrivateIpAddress"])
+PYEOF
           )
           
           echo "App Server IP: $APP_IP"
           echo "APP_PRIVATE_IP=$APP_IP" >> $GITHUB_ENV
+
 
       - name: Generate SSH Config file
         run: |
