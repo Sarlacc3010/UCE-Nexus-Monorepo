@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import federation from '@originjs/vite-plugin-federation'
 
 export default defineConfig({
+  base: '/campus-mf/',
   plugins: [
     react(),
     federation({
@@ -22,7 +23,6 @@ export default defineConfig({
       } as any
     })
   ],
-  base: '/campus-mf/',
   build: {
     modulePreload: false,
     target: 'esnext',
