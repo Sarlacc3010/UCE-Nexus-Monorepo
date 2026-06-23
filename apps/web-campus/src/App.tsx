@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import './App.css'
+
+const ChatWidget = lazy(() => import('chatbot/ChatWidget'))
 
 interface GatewayHealth {
   status: string;
@@ -7,6 +9,8 @@ interface GatewayHealth {
   ambiente: string;
   latency?: number;
 }
+
+const API_URL = import.meta.env.PROD ? '' : 'http://localhost:3000';
 
 function App() {
   // 1. Estado para el Healthcheck del Gateway
@@ -22,7 +26,7 @@ function App() {
   const checkHealth = async () => {
     const startTime = Date.now();
     try {
-      const res = await fetch('http://localhost:3000/health');
+      const res = await fetch(`${API_URL}/health`);
       if (res.ok) {
         const data = await res.json();
         const latency = Date.now() - startTime;
@@ -147,7 +151,7 @@ function App() {
             <div className="gateway-status-placeholder">
               {gatewayStatus === 'CHECKING' 
                 ? 'Conectando con el endpoint /health...' 
-                : 'Sin respuesta del Gateway en http://localhost:3000. Asegúrate de iniciar ms-01-gateway.'}
+                : `Sin respuesta del Gateway en ${API_URL || 'relativo /api'}. Asegúrate de iniciar ms-01-gateway.`}
             </div>
           )}
 
@@ -252,6 +256,9 @@ function App() {
           </div>
         )}
       </div>
+      <Suspense fallback={null}>
+        <ChatWidget gatewayUrl={API_URL} />
+      </Suspense>
     </div>
   )
 }

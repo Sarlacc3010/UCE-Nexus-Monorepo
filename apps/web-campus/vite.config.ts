@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import federation from '@originjs/vite-plugin-federation'
 
 export default defineConfig({
+  base: '/campus-mf/',
   plugins: [
     react(),
     federation({
@@ -11,8 +12,15 @@ export default defineConfig({
       // Exponer el componente de panel de control de seguridad para que lo consuma el Host
       exposes: {
         './GatewayApp': './src/App.tsx',
+        './CampusApp': './src/CampusApp.tsx',
       },
-      shared: ['react', 'react-dom']
+      remotes: {
+        chatbot: '/chatbot-mf/assets/remoteEntry.js',
+      },
+      shared: {
+        react: { singleton: true, requiredVersion: '^19.2.6' },
+        'react-dom': { singleton: true, requiredVersion: '^19.2.6' }
+      } as any
     })
   ],
   build: {
@@ -21,7 +29,20 @@ export default defineConfig({
     minify: false,
     cssCodeSplit: false
   },
-  // Ejecutar en el puerto 5002 para evitar colisiones
-  server: { port: 5002, strictPort: true },
-  preview: { port: 5002, strictPort: true }
+  server: {
+    port: 5002,
+    strictPort: true,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+    }
+  },
+  preview: {
+    port: 5002,
+    strictPort: true,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+    }
+  }
 })

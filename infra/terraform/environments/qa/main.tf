@@ -13,6 +13,7 @@ module "compute" {
   subnet_id             = module.vpc.public_subnet_id
   subnet_b_id           = module.vpc.public_subnet_b_id
   instance_type         = var.instance_type
+  db_instance_type      = var.db_instance_type
   bastion_instance_type = var.bastion_instance_type
   key_name              = var.key_name
   use_academy_iam       = var.use_academy_iam

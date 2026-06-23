@@ -1,6 +1,6 @@
 variable "environment" {
   type        = string
-  description = "Nombre del entorno (ej. QA, Prod)"
+  description = "Nombre del entorno (ej. QA, Production)"
 }
 
 variable "project_name" {
@@ -11,29 +11,35 @@ variable "project_name" {
 
 variable "vpc_id" {
   type        = string
-  description = "ID de la VPC donde se desplegarán las instancias y Security Groups"
+  description = "ID de la VPC para asociar los Security Groups"
 }
 
 variable "subnet_id" {
   type        = string
-  description = "ID de la subred donde se desplegarán las instancias"
+  description = "ID de la subred principal pública"
 }
 
 variable "subnet_b_id" {
   type        = string
-  description = "ID de la subred secundaria para el ALB"
+  description = "ID de la subred secundaria"
 }
 
 variable "instance_type" {
   type        = string
-  default     = "t2.micro"
-  description = "Tipo de instancia para el App Server"
+  default     = "t3.small"
+  description = "Tipo de instancia EC2 para el App Server"
+}
+
+variable "db_instance_type" {
+  type        = string
+  default     = "t3.medium"
+  description = "Tipo de instancia EC2 para el DB Server"
 }
 
 variable "bastion_instance_type" {
   type        = string
-  default     = "t2.micro"
-  description = "Tipo de instancia para el Bastion Host"
+  default     = "t3.micro"
+  description = "Tipo de instancia EC2 para el Bastion Host"
 }
 
 variable "key_name" {
@@ -45,11 +51,11 @@ variable "key_name" {
 variable "use_academy_iam" {
   type        = bool
   default     = true
-  description = "Si es true, asocia el LabInstanceProfile preexistente de AWS Academy a las instancias"
+  description = "Asociar el LabInstanceProfile preexistente de AWS Academy"
 }
 
 variable "ami_id" {
   type        = string
   default     = "ami-0c7217cdde317cfec" # Ubuntu 22.04 LTS en us-east-1
-  description = "AMI ID para las instancias de Ubuntu"
+  description = "AMI ID por defecto para las instancias"
 }

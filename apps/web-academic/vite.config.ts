@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import federation from '@originjs/vite-plugin-federation'
 
 export default defineConfig({
+  base: '/academic-mf/',
   plugins: [
     react(),
     federation({
@@ -12,8 +13,15 @@ export default defineConfig({
       exposes: {
         './BookingApp': './src/App.tsx',
         './DashboardApp': './src/DashboardApp.tsx',
+        './AcademicApp': './src/AcademicApp.tsx',
       },
-      shared: ['react', 'react-dom']
+      remotes: {
+        chatbot: '/chatbot-mf/assets/remoteEntry.js',
+      },
+      shared: {
+        react: { singleton: true, requiredVersion: '^19.2.6' },
+        'react-dom': { singleton: true, requiredVersion: '^19.2.6' }
+      } as any
     })
   ],
   build: {
@@ -22,7 +30,20 @@ export default defineConfig({
     minify: false,
     cssCodeSplit: false
   },
-  // Fijamos el puerto en 5001
-  server: { port: 5001, strictPort: true },
-  preview: { port: 5001, strictPort: true }
+  server: {
+    port: 5001,
+    strictPort: true,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+    }
+  },
+  preview: {
+    port: 5001,
+    strictPort: true,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+    }
+  }
 })

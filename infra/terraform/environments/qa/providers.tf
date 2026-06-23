@@ -7,14 +7,11 @@ terraform {
     }
   }
 
-  # Configuración del Backend S3 para guardar el estado.
-  # NOTA: El bucket S3 especificado debe ser creado ANTES de ejecutar 'terraform init'.
   backend "s3" {
-    bucket         = "uce-nexus-terraform-state-qa"
-    key            = "qa/terraform.tfstate"
-    region         = "us-east-1"
-    encrypt        = true
-    # dynamodb_table = "uce-nexus-locks-qa" # Opcional para habilitar bloqueo de estado
+    bucket  = "uce-nexus-terraform-state-qa-v2"
+    key     = "qa/terraform.tfstate"
+    region  = "us-east-1"
+    encrypt = true
   }
 }
 

@@ -201,8 +201,8 @@ app.post('/api/refresh', async (req: Request, res: Response): Promise<void> => {
 app.post('/api/reservas', authenticateJWT, requireRole('user'), (req: Request, res: Response) => {
     const decoded = (req as any).user;
     
-    // Extrae el ID de usuario desde el token decodificado de Keycloak (sub o username)
-    const userId = decoded?.sub || decoded?.preferred_username || "est-12345";
+    // Extrae el ID de usuario desde el token decodificado de Keycloak (email, username o sub)
+    const userId = decoded?.email || decoded?.preferred_username || decoded?.sub || "est-12345";
 
     const grpcRequest = {
         user_id: userId,
@@ -229,11 +229,136 @@ app.post('/api/reservas', authenticateJWT, requireRole('user'), (req: Request, r
 
 
 
+// ─── Enrollment Service (MS-03) Proxy ────────────────────────────────────────
+const ENROLLMENT_SERVICE_URL = process.env.ENROLLMENT_SERVICE_URL || 'http://localhost:3001';
+
+app.use('/api/academic', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const targetUrl = `${ENROLLMENT_SERVICE_URL}${req.originalUrl.replace('/api/academic', '/api')}`;
+        
+        const headers: Record<string, string> = {};
+        if (req.headers.authorization) {
+            headers['Authorization'] = req.headers.authorization;
+        }
+        if (req.headers['content-type']) {
+            headers['Content-Type'] = req.headers['content-type'];
+        }
+
+        const fetchOptions: RequestInit = {
+            method: req.method,
+            headers,
+        };
+
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+            fetchOptions.body = JSON.stringify(req.body);
+        }
+
+        const response = await fetch(targetUrl, fetchOptions);
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            res.status(response.status).json(data);
+        } else {
+            const data = await response.text();
+            res.status(response.status).send(data);
+        }
+    } catch (error: any) {
+        logger.error(`Error proxying to enrollment service (${req.method} ${req.originalUrl}):`, error);
+        res.status(503).json({ error: 'El servicio de matrícula/academia no está disponible.' });
+    }
+});
+
+// ─── AI Agent Proxy (MS-08) ──────────────────────────────────────────────────
+const AI_AGENT_URL = process.env.AI_AGENT_URL || 'http://localhost:8001';
+
+/**
+ * @swagger
+ * /api/chat:
+ *   post:
+ *     summary: Chat público con el agente IA (JWT opcional — amplía capacidades si se provee)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *               history:
+ *                 type: array
+ *               conversation_id:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Respuesta del agente IA
+ */
+app.post('/api/chat', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+        // Pass JWT through if provided (agent decides capabilities based on role)
+        if (req.headers.authorization) {
+            headers['Authorization'] = req.headers.authorization;
+        }
+        // Forward real client IP for rate limiting
+        const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
+        if (clientIp) headers['X-Forwarded-For'] = clientIp;
+
+        const response = await fetch(`${AI_AGENT_URL}/chat`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(req.body),
+        });
+
+        const data = await response.json();
+        res.status(response.status).json(data);
+    } catch (error: any) {
+        logger.error('Error proxying to AI agent (public):', error);
+        res.status(503).json({ error: 'El agente IA no está disponible en este momento.' });
+    }
+});
+
+/**
+ * @swagger
+ * /api/chat/secure:
+ *   post:
+ *     summary: Chat del agente IA para usuarios autenticados (JWT requerido)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Respuesta del agente IA con capacidades completas
+ *       401:
+ *         description: Token no proporcionado
+ */
+app.post('/api/chat/secure', authenticateJWT, async (req: Request, res: Response): Promise<void> => {
+    try {
+        const response = await fetch(`${AI_AGENT_URL}/chat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': req.headers.authorization || '',
+            },
+            body: JSON.stringify(req.body),
+        });
+
+        const data = await response.json();
+        res.status(response.status).json(data);
+    } catch (error: any) {
+        logger.error('Error proxying to AI agent (secure):', error);
+        res.status(503).json({ error: 'El agente IA no está disponible en este momento.' });
+    }
+});
+
 if (process.env.NODE_ENV !== 'test') {
     app.listen(PORT, () => {
         logger.info(`🚀 UCE-Nexus API Gateway corriendo en http://localhost:${PORT}`);
         logger.info(`🛡️  Seguridad JWT y cliente gRPC habilitados.`);
         logger.info(`📖 Swagger UI disponible en http://localhost:${PORT}/api-docs`);
+        logger.info(`🤖 AI Agent proxy habilitado → ${AI_AGENT_URL}`);
     });
 }
 

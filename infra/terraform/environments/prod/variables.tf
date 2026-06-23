@@ -12,13 +12,19 @@ variable "aws_profile" {
 
 variable "instance_type" {
   type        = string
-  default     = "t2.micro"
+  default     = "t3.small" # App Server
   description = "Tipo de instancia EC2 para el servidor de aplicaciones de Producción"
+}
+
+variable "db_instance_type" {
+  type        = string
+  default     = "t3.medium" # DB Server
+  description = "Tipo de instancia EC2 para el servidor de bases de datos de Producción"
 }
 
 variable "bastion_instance_type" {
   type        = string
-  default     = "t2.micro"
+  default     = "t3.micro" # Bastion
   description = "Tipo de instancia EC2 para el Bastion Host de Producción"
 }
 

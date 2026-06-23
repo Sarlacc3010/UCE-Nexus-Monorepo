@@ -5,10 +5,10 @@ output "vpc_id" {
 
 output "public_subnet_id" {
   value       = aws_subnet.public.id
-  description = "ID de la subred pública A creada"
+  description = "ID de la subred pública A"
 }
 
 output "public_subnet_b_id" {
   value       = aws_subnet.public_b.id
-  description = "ID de la subred pública B creada"
+  description = "ID de la subred pública B"
 }
