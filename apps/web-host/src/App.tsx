@@ -41,6 +41,7 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
 const AcademicApp = lazy(() => import('academic/AcademicApp'))
 const CampusApp = lazy(() => import('gateway/CampusApp'))
 const ChatWidget = lazy(() => import('chatbot/ChatWidget'))
+import ErrorBoundary from './ErrorBoundary';
 
 // Comprobar si el token almacenado es válido y no está cerca de expirar (10 segundos de margen)
 const isTokenExpired = (jwtToken: string) => {
@@ -661,9 +662,11 @@ function App() {
       </footer>
 
       {/* AI Agent Chat Widget — visible en todas las páginas */}
-      <Suspense fallback={null}>
-        <ChatWidget gatewayUrl={import.meta.env.VITE_GATEWAY_URL || ''} />
-      </Suspense>
+      <ErrorBoundary fallback={null}>
+        <Suspense fallback={null}>
+          <ChatWidget gatewayUrl={import.meta.env.VITE_GATEWAY_URL || ''} />
+        </Suspense>
+      </ErrorBoundary>
     </div>
   )
 }

@@ -338,3 +338,99 @@ INSERT INTO student_enrollments (student_id, parallel_id) VALUES
 (42, 71),
 (42, 68)
 ON CONFLICT (student_id, parallel_id) DO NOTHING;
+
+
+-- ==========================================================
+-- CALIFICACIONES (Estructura UCE)
+-- Total: 20 puntos
+--   Examen 1er Hemisemestre : 2 pts  (aprobacion >= 1.00)
+--   Nota Individual          : 7 pts  (aprobacion >= 3.50)
+--   Nota Grupal              : 5 pts  (aprobacion >= 2.50)
+--   Examen Final             : 6 pts  (aprobacion >= 3.00)
+--   TOTAL APROBACION         : >= 14 / 20
+-- ==========================================================
+
+CREATE TABLE IF NOT EXISTS grades (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL,
+    parallel_id INTEGER NOT NULL REFERENCES parallels(id) ON DELETE CASCADE,
+
+    -- Componentes de la nota (sobre 20 en total)
+    examen_hemisemestre DECIMAL(4,2) DEFAULT NULL, -- Sobre 2 pts
+    nota_individual     DECIMAL(4,2) DEFAULT NULL, -- Sobre 7 pts
+    nota_grupal         DECIMAL(4,2) DEFAULT NULL, -- Sobre 5 pts
+    examen_final        DECIMAL(4,2) DEFAULT NULL, -- Sobre 6 pts
+
+    -- Nota total calculada y estado
+    nota_total          DECIMAL(5,2) GENERATED ALWAYS AS (
+                            COALESCE(examen_hemisemestre, 0) +
+                            COALESCE(nota_individual, 0) +
+                            COALESCE(nota_grupal, 0) +
+                            COALESCE(examen_final, 0)
+                        ) STORED,
+    estado              VARCHAR(20) DEFAULT 'CURSANDO', -- CURSANDO | APROBADO | REPROBADO | RETIRADO
+
+    -- Control de quién ingresó la nota
+    ingresado_por       INTEGER DEFAULT NULL, -- ID del profesor
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Integridad: solo se puede tener una nota por estudiante-paralelo
+    CONSTRAINT fk_grade_enrollment FOREIGN KEY (student_id, parallel_id)
+        REFERENCES student_enrollments(student_id, parallel_id) ON DELETE CASCADE,
+    CONSTRAINT uq_grade_per_student_parallel UNIQUE (student_id, parallel_id),
+
+    -- Validacion de rangos por componente
+    CONSTRAINT chk_examen_hemisemestre CHECK (examen_hemisemestre IS NULL OR (examen_hemisemestre >= 0 AND examen_hemisemestre <= 2)),
+    CONSTRAINT chk_nota_individual     CHECK (nota_individual IS NULL OR (nota_individual >= 0 AND nota_individual <= 7)),
+    CONSTRAINT chk_nota_grupal         CHECK (nota_grupal IS NULL OR (nota_grupal >= 0 AND nota_grupal <= 5)),
+    CONSTRAINT chk_examen_final        CHECK (examen_final IS NULL OR (examen_final >= 0 AND examen_final <= 6))
+);
+
+CREATE INDEX IF NOT EXISTS idx_grades_student ON grades(student_id);
+CREATE INDEX IF NOT EXISTS idx_grades_parallel ON grades(parallel_id);
+
+
+-- ==========================================================
+-- SOLICITUDES ESTUDIANTILES (Retiro Simple y Retiro Fortuito)
+-- ==========================================================
+
+CREATE TABLE IF NOT EXISTS student_requests (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL,
+
+    -- Tipo de solicitud:
+    --   RETIRO_SIMPLE   : Se hace dentro del primer mes, sin aprobación, solo aplica a UNA materia.
+    --   RETIRO_FORTUITO : Pasado el primer mes, aplica a TODAS las asignaturas, requiere aprobacion
+    --                     y el estudiante debe adjuntar el motivo y evidencias.
+    tipo_solicitud  VARCHAR(30) NOT NULL, -- RETIRO_SIMPLE | RETIRO_FORTUITO | TERCERA_MATRICULA | EXCEPCIONALIDAD
+
+    -- Estado del flujo de aprobación
+    estado          VARCHAR(20) DEFAULT 'PENDIENTE', -- PENDIENTE | EN_REVISION | APROBADA | RECHAZADA
+
+    -- Para RETIRO_SIMPLE: solo se llena parallel_id (una sola materia)
+    -- Para RETIRO_FORTUITO: parallel_id es NULL, aplica a todas sus materias activas
+    parallel_id     INTEGER REFERENCES parallels(id) ON DELETE SET NULL,
+
+    -- Para RETIRO_FORTUITO y otras solicitudes con justificativo
+    motivo          TEXT,
+    evidencias_url  TEXT[], -- Array de URLs (ej. S3) con los archivos adjuntos
+
+    -- Trazabilidad
+    fecha_solicitud     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_resolucion    TIMESTAMP DEFAULT NULL,
+    resuelto_por        INTEGER DEFAULT NULL, -- ID del administrativo que procesa
+    notas_administrativo TEXT DEFAULT NULL,   -- Comentarios internos al resolver
+
+    CONSTRAINT chk_retiro_simple_parallel CHECK (
+        -- Si es RETIRO_SIMPLE, debe tener un parallel_id específico
+        tipo_solicitud != 'RETIRO_SIMPLE' OR parallel_id IS NOT NULL
+    ),
+    CONSTRAINT chk_retiro_fortuito_motivo CHECK (
+        -- Si es RETIRO_FORTUITO, el motivo es obligatorio
+        tipo_solicitud != 'RETIRO_FORTUITO' OR motivo IS NOT NULL
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_requests_student    ON student_requests(student_id);
+CREATE INDEX IF NOT EXISTS idx_requests_estado     ON student_requests(estado);
+CREATE INDEX IF NOT EXISTS idx_requests_tipo       ON student_requests(tipo_solicitud);
