@@ -50,8 +50,10 @@ jobs:
       web_host: ${{ steps.filter.outputs.web_host }}
       web_academic: ${{ steps.filter.outputs.web_academic }}
       web_campus: ${{ steps.filter.outputs.web_campus }}
+      web_chatbot: ${{ steps.filter.outputs.web_chatbot }}
       enrollment: ${{ steps.filter.outputs.enrollment }}
       ai_agent: ${{ steps.filter.outputs.ai_agent }}
+      geocampus: ${{ steps.filter.outputs.geocampus }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -75,10 +77,14 @@ jobs:
               - 'apps/web-academic/**'
             web_campus:
               - 'apps/web-campus/**'
+            web_chatbot:
+              - 'apps/web-chatbot/**'
             enrollment:
               - 'services/ms-03-enrollment/**'
             ai_agent:
               - 'services/ms-08-ai-agent/**'
+            geocampus:
+              - 'services/ms-09-geocampus/**'
 
   # ==========================================
   # 2.5. CI: Pruebas Unitarias
@@ -446,6 +452,8 @@ jobs:
           context: ./apps/web-campus
           file: ./apps/web-campus/dockerfile
           push: ${{ github.event_name != 'pull_request' }}
+          build-args: |
+            VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/web-campus:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_HUB_USERNAME }}/web-campus:${{ github.sha }}
@@ -535,5 +543,91 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/ms-08-ai-agent:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_HUB_USERNAME }}/ms-08-ai-agent:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================
+  # 13. Build & Push: Web Chatbot
+  # ==========================================
+  build-web-chatbot:
+    name: Build & Push Web Chatbot
+    needs: [changes-detector, secrets-scan, run-tests]
+    if: ${{ needs.changes-detector.outputs.web_chatbot == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set Docker Image Tag
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
+            echo "IMAGE_TAG=qa" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/web-chatbot
+          file: ./apps/web-chatbot/dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/web-chatbot:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/web-chatbot:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================
+  # 14. Build & Push: GeoCampus (MS-09)
+  # ==========================================
+  build-geocampus:
+    name: Build & Push GeoCampus (MS-09)
+    needs: [changes-detector, secrets-scan, run-tests]
+    if: ${{ needs.changes-detector.outputs.geocampus == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set Docker Image Tag
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
+            echo "IMAGE_TAG=qa" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/ms-09-geocampus
+          file: ./services/ms-09-geocampus/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/ms-09-geocampus:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/ms-09-geocampus:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

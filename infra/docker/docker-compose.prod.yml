@@ -31,6 +31,15 @@ services:
     networks:
       - nexus-network
 
+  web-chatbot:
+    image: ${DOCKER_HUB_USER:-abel3010}/web-chatbot:${IMAGE_TAG:-latest}
+    container_name: nexus-web-chatbot
+    restart: unless-stopped
+    ports:
+      - "5003:80"
+    networks:
+      - nexus-network
+
   # ==========================================
   # 1. MICROSERVICIOS DE LA APLICACIÓN
   # ==========================================
@@ -128,6 +137,20 @@ services:
       - B2_KEY_ID
       - B2_APPLICATION_KEY
       - B2_BUCKET_NAME
+    networks:
+      - nexus-network
+
+  # MS-09: GeoCampus Service (Rust Backend)
+  ms-09-geocampus:
+    image: ${DOCKER_HUB_USER:-abel3010}/ms-09-geocampus:${IMAGE_TAG:-latest}
+    container_name: nexus-ms-09-geocampus
+    restart: unless-stopped
+    ports:
+      - "8009:8009"
+    environment:
+      - DATABASE_URL=postgres://geocampus_user:geocampus_password@${DB_PRIVATE_IP:-localhost}:5435/uce_geocampus_dev
+      - MQTT_HOST=localhost
+      - MQTT_PORT=1883
     networks:
       - nexus-network
 
