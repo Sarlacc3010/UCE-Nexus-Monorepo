@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Map, { Marker, Source, Layer } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { X, Navigation, Building, Building2, Landmark, GraduationCap, Palette, TestTube, Leaf, Stethoscope, HeartPulse, Brain, BookOpen, Users, Mic, Dumbbell, Activity, HardHat, Factory, Scale, Smile, Library, School } from 'lucide-react';
+import { X, Navigation, Building, Building2, Landmark, Palette, TestTube, Leaf, HeartPulse, Brain, BookOpen, Users, Mic, Dumbbell, HardHat, Scale, Smile, Library, School } from 'lucide-react';
 import type { MapRef } from 'react-map-gl';
 
 // Token de Mapbox desde la variable de entorno VITE_
