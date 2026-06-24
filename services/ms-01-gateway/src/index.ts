@@ -12,6 +12,7 @@ import * as protoLoader from '@grpc/proto-loader';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger';
 import logger from './logger';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 
 dotenv.config();
 
@@ -352,6 +353,25 @@ app.post('/api/chat/secure', authenticateJWT, async (req: Request, res: Response
         res.status(503).json({ error: 'El agente IA no está disponible en este momento.' });
     }
 });
+
+// ─── GeoCampus Service (MS-09) Proxy ─────────────────────────────────────────
+const GEOCAMPUS_SERVICE_URL = process.env.GEOCAMPUS_SERVICE_URL || 'http://localhost:8009';
+
+const geocampusProxy = createProxyMiddleware({
+    target: GEOCAMPUS_SERVICE_URL,
+    changeOrigin: true,
+    ws: true,
+    pathRewrite: {
+        '^/api/geocampus': '/api',
+        '^/ws/geocampus': '/ws',
+    },
+    onError: (err: any, req: any, res: any) => {
+        logger.error(`Error proxying to geocampus service: ${err.message}`);
+    }
+});
+
+app.use('/api/geocampus', geocampusProxy);
+app.use('/ws/geocampus', geocampusProxy);
 
 if (process.env.NODE_ENV !== 'test') {
     app.listen(PORT, () => {

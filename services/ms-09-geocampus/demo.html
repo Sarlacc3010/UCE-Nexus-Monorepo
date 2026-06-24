@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UCE-Nexus GeoCampus (2D Map)</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-serif; display: flex; overflow: hidden; background: #0f172a;}
+        #map-container { flex-grow: 1; height: 100vh; position: relative; }
+        #map { width: 100%; height: 100%; }
+        
+        /* Sidebar styling */
+        #sidebar {
+            width: 350px;
+            background: #1e293b;
+            color: white;
+            padding: 20px;
+            box-shadow: -4px 0 15px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        #sidebar.open { transform: translateX(0); }
+        .close-btn { align-self: flex-end; cursor: pointer; color: #94a3b8; font-size: 1.5rem; }
+        .close-btn:hover { color: white; }
+        
+        h2 { margin: 0 0 5px 0; color: #38bdf8; }
+        .faculty-desc { font-size: 0.9rem; color: #cbd5e1; margin-bottom: 20px; }
+        .info-section { margin-bottom: 15px; }
+        .info-title { font-weight: bold; color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* MQTT Cards in Sidebar */
+        .facility-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .facility-name { font-size: 0.95rem; font-weight: bold; }
+        .facility-count { font-size: 1.2rem; font-weight: 900; }
+        
+        /* Status indicator colors */
+        .low { color: #22c55e; }
+        .medium { color: #eab308; }
+        .high { color: #ef4444; }
+
+        /* Route UI */
+        .route-ui {
+            position: absolute;
+            top: 20px;
+            left: 50px;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            width: 300px;
+        }
+        .route-ui h3 { margin: 0 0 10px 0; font-size: 1.1rem; color: #38bdf8; }
+        .route-input { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: none; background: #334155; color: white; }
+        .route-btn { width: 100%; padding: 10px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .route-btn:hover { background: #1d4ed8; }
+
+        #ws-status { font-size: 0.8rem; color: #94a3b8; text-align: center; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div id="map-container">
+        <!-- Route Panel -->
+        <div class="route-ui">
+            <h3>🧭 Navegación Asistida</h3>
+            <select class="route-input" id="start-node">
+                <option value="filosofia">Facultad de Filosofía</option>
+                <option value="psicologia">Facultad de Psicología</option>
+                <option value="fica">FICA (Ingeniería)</option>
+            </select>
+            <select class="route-input" id="end-node">
+                <option value="psicologia">Facultad de Psicología</option>
+                <option value="fica">FICA (Ingeniería)</option>
+                <option value="filosofia">Facultad de Filosofía</option>
+            </select>
+            <button class="route-btn" onclick="calculateRoute()">Trazar Ruta</button>
+            <div id="ws-status">Conectando MQTT...</div>
+        </div>
+
+        <div id="map"></div>
+    </div>
+
+    <!-- Sidebar for Faculty Information -->
+    <div id="sidebar">
+        <div class="close-btn" onclick="closeSidebar()">✖</div>
+        <h2 id="fac-title">Facultad</h2>
+        <div class="faculty-desc" id="fac-desc">Descripción...</div>
+        
+        <div class="info-section">
+            <div class="info-title">⏰ Horario de Atención</div>
+            <div style="font-size: 0.9rem; margin-top: 5px;">Lunes a Viernes: 07:00 - 20:00</div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-title">📡 Estado en Tiempo Real (MQTT)</div>
+            <div id="facilities-container">
+                <!-- Se inyectan las tarjetas aquí -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        const map = L.map('map').setView([-0.1994, -78.5039], 17);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap - UCE Nexus'
+        }).addTo(map);
+
+        // Facultades (Marcadores Principales)
+        const faculties = {
+            'fica': {
+                name: "Facultad de Ingeniería (FICA)",
+                desc: "Ingeniería Civil, Computación, Diseño Industrial.",
+                coords: [-0.1995, -78.5040],
+                aps: ['FICA-BIBLIOTECA', 'FICA-CAFETERIA', 'FICA-LAB-FISICA', 'FICA-LAB-QUIMICA', 'FICA-AP-1', 'FICA-AP-2']
+            },
+            'filosofia': {
+                name: "Facultad de Filosofía",
+                desc: "Filosofía, Letras y Ciencias de la Educación.",
+                coords: [-0.2005, -78.5028],
+                aps: ['FILO-BIBLIOTECA', 'FILO-AUDITORIO']
+            },
+            'psicologia': {
+                name: "Facultad de Psicología",
+                desc: "Psicología Clínica e Industrial.",
+                coords: [-0.1980, -78.5020],
+                aps: ['PSICO-BIBLIOTECA']
+            }
+        };
+
+        // Estado en vivo de TODOS los APs
+        let liveData = {};
+        let currentFaculty = null;
+
+        // Dibujar Marcadores de Facultades
+        for (const [key, fac] of Object.entries(faculties)) {
+            const marker = L.marker(fac.coords).addTo(map);
+            marker.on('click', () => openSidebar(key));
+            marker.bindTooltip(fac.name, { permanent: true, direction: "top", offset: [0, -20], className: 'fac-label' });
+        }
+
+        // Sidebar Logic
+        function openSidebar(facultyKey) {
+            currentFaculty = facultyKey;
+            const fac = faculties[facultyKey];
+            document.getElementById('fac-title').innerText = fac.name;
+            document.getElementById('fac-desc').innerText = fac.desc;
+            document.getElementById('sidebar').classList.add('open');
+            renderFacilities();
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            currentFaculty = null;
+        }
+
+        function renderFacilities() {
+            if (!currentFaculty) return;
+            const container = document.getElementById('facilities-container');
+            container.innerHTML = '';
+            
+            const fac = faculties[currentFaculty];
+            
+            fac.aps.forEach(ap => {
+                const count = liveData[ap] || 0;
+                let heatClass = 'low';
+                if (count > 80) heatClass = 'medium';
+                if (count > 150) heatClass = 'high';
+
+                container.innerHTML += `
+                    <div class="facility-card">
+                        <div class="facility-name">${ap.split('-').slice(1).join(' ')}</div>
+                        <div class="facility-count ${heatClass}">${count}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // WebSockets para MQTT
+        const ws = new WebSocket('ws://localhost:8009/ws');
+        const status = document.getElementById('ws-status');
+
+        ws.onopen = () => { status.innerHTML = '🟢 MQTT En Vivo'; status.style.color = '#22c55e'; };
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            liveData = data; // Guardamos el estado global
+            // Si la tarjeta está abierta, actualizamos los números al instante
+            if (currentFaculty) renderFacilities();
+        };
+        ws.onclose = () => { status.innerHTML = '🔴 Desconectado'; status.style.color = '#ef4444'; };
+
+        // Lógica Ficticia de Trazado de Rutas (Fase 2 UI)
+        let currentRouteLine = null;
+        async function calculateRoute() {
+            if(currentRouteLine) map.removeLayer(currentRouteLine);
+            
+            const startNode = document.getElementById('start-node').value;
+            const endNode = document.getElementById('end-node').value;
+            
+            try {
+                const response = await fetch(`http://localhost:8009/api/route?start=${startNode}&end=${endNode}`);
+                const data = await response.json();
+
+                if (data && data.coordinates) {
+                    const latlngs = data.coordinates.map(c => [c.lat, c.lng]);
+                    currentRouteLine = L.polyline(latlngs, {color: '#38bdf8', weight: 5, dashArray: '10, 10'}).addTo(map);
+                    map.fitBounds(currentRouteLine.getBounds());
+                    console.log(`Ruta calculada: ${data.distance} metros a través de ${data.path.join(' -> ')}`);
+                } else {
+                    alert("No se encontró una ruta o el nodo es inválido.");
+                }
+            } catch (error) {
+                console.error("Error al obtener ruta:", error);
+                alert("Error al comunicarse con ms-09-geocampus.");
+            }
+        }
+    </script>
+</body>
+</html>

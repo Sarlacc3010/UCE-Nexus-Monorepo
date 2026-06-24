@@ -29,6 +29,29 @@ export default defineConfig({
     strictPort: true,
     headers: {
       "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      },
+      '/ws': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        ws: true
+      },
+      '/academic-mf': {
+        target: 'http://localhost:5001',
+        changeOrigin: true
+      },
+      '/campus-mf': {
+        target: 'http://localhost:5002',
+        changeOrigin: true
+      },
+      '/chatbot-mf': {
+        target: 'http://localhost:5003',
+        changeOrigin: true
+      }
     }
   },
   preview: {

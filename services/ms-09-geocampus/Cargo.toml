@@ -1,0 +1,14 @@
+[package]
+name = "ms-09-geocampus"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.8", features = ["ws", "macros"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rumqttc = "0.25"
+tower-http = { version = "0.7", features = ["cors", "fs"] }
+futures = "0.3"
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "json"] }

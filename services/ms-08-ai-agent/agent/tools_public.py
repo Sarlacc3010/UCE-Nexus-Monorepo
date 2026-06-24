@@ -72,6 +72,50 @@ PUBLIC_TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_campus_route",
+            "description": (
+                "Obtiene la ruta más corta (caminando) entre dos puntos del campus universitario (Geocampus). "
+                "Utiliza esto cuando el usuario pregunte cómo llegar de una facultad a otra."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "description": "El punto de origen (ej: 'fica', 'filosofia', 'psicologia', 'plaza_central', 'entrada_principal'). Si el usuario dice 'ingenieria', usa 'fica'.",
+                    },
+                    "end": {
+                        "type": "string",
+                        "description": "El punto de destino (ej: 'fica', 'filosofia', 'psicologia', 'plaza_central', 'entrada_principal').",
+                    }
+                },
+                "required": ["start", "end"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_building_live_status",
+            "description": (
+                "Obtiene la concurrencia o estado en vivo de una facultad o edificio usando datos de sensores MQTT (Heatmap). "
+                "Úsala cuando el usuario pregunte si hay mucha gente, qué tan lleno está, o cuál es el estado de ocupación actual de un lugar."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "building_id": {
+                        "type": "string",
+                        "description": "El ID del edificio (ej: 'biblioteca_general', 'fica', 'comedor'). Si no estás seguro, usa el nombre corto.",
+                    }
+                },
+                "required": ["building_id"],
+            },
+        },
+    },
 ]
 
 
@@ -128,6 +172,61 @@ async def get_platform_status() -> str:
         return "No pude verificar el estado de la plataforma."
 
 
+async def get_building_live_status(building_id: str) -> str:
+    """Check the live occupancy from the heatmap API in geocampus."""
+    try:
+        GEOCAMPUS_URL = "http://localhost:8009"
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{GEOCAMPUS_URL}/api/heatmap")
+            if response.status_code == 200:
+                data = response.json()
+                # data is a dict of {"ap_biblioteca": 45, "ap_fica": 12}
+                # Let's do a loose match
+                clients = 0
+                found = False
+                for key, val in data.items():
+                    if building_id.lower() in key.lower() or key.lower() in building_id.lower():
+                        clients += val
+                        found = True
+                
+                if found:
+                    return f"Actualmente hay aproximadamente {clients} personas/dispositivos conectados en {building_id} o sus alrededores."
+                else:
+                    return f"No hay datos de sensores en vivo para '{building_id}' en este momento. Puede que la ocupación sea muy baja o no tenga sensores."
+            else:
+                return "Hubo un error consultando los sensores en vivo."
+    except Exception as e:
+        logger.error(f"Heatmap check error: {e}")
+        return "No pude conectar con el sistema de sensores del campus."
+
+async def get_campus_route(start: str, end: str) -> str:
+    """Check the shortest route via ms-09-geocampus API and emit UI command."""
+    try:
+        # Emit the command so the UI draws the route automatically
+        ui_command = f"[MAP_ROUTE_TO:{end}]"
+        
+        # Asume que geocampus corre en el puerto 8009 internamente
+        GEOCAMPUS_URL = "http://localhost:8009"
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{GEOCAMPUS_URL}/api/route?start={start}&end={end}")
+            if response.status_code == 200:
+                data = response.json()
+                if data and "path" in data:
+                    route_path = " -> ".join(data["path"])
+                    return (
+                        f"Ruta calculada. Distancia: {data['distance']} metros. "
+                        f"Dile al usuario amigablemente que le has trazado la ruta en el mapa hacia su destino. "
+                        f"IMPORTANTE: Debes incluir el comando {ui_command} literalmente en tu respuesta final para que la interfaz trace la ruta."
+                    )
+                else:
+                    return f"No se pudo calcular una ruta directa entre esos puntos. Aún así, incluye {ui_command} en tu respuesta para que el mapa muestre el destino."
+            else:
+                return f"Hubo un error calculando la ruta exacta. Incluye {ui_command} en tu respuesta para que el mapa marque el destino de todos modos."
+    except Exception as e:
+        logger.error(f"Routing check error: {e}")
+        return f"No pude calcular distancias. Sin embargo, incluye {ui_command} en tu respuesta para activar la navegación visual en el mapa."
+
+
 # ─── Tool dispatcher ─────────────────────────────────────────────────────────
 
 async def execute_public_tool(tool_name: str, arguments: dict) -> str:
@@ -138,5 +237,9 @@ async def execute_public_tool(tool_name: str, arguments: dict) -> str:
         return await get_campus_events(arguments.get("query", ""))
     elif tool_name == "get_platform_status":
         return await get_platform_status()
+    elif tool_name == "get_campus_route":
+        return await get_campus_route(arguments.get("start", "mi_ubicacion"), arguments.get("end", ""))
+    elif tool_name == "get_building_live_status":
+        return await get_building_live_status(arguments.get("building_id", ""))
     else:
         return f"Tool '{tool_name}' not found in public tools."

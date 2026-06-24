@@ -141,11 +141,25 @@ export default function ChatWidget({ gatewayUrl = GATEWAY_URL }: ChatWidgetProps
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
+      // Get user location context if possible
+      let locationContext = '';
+      try {
+        if ('geolocation' in navigator) {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3000 });
+          });
+          locationContext = `\n[Contexto del Sistema: La ubicación actual GPS del usuario es lat=${pos.coords.latitude}, lng=${pos.coords.longitude}]`;
+        }
+      } catch (e) {
+        // Silently fail if location denied or timeout
+        console.warn('Geolocation not available for chatbot context', e);
+      }
+
       const response = await fetch(`${gatewayUrl}/api/chat`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          message: trimmed,
+          message: trimmed + locationContext,
           conversation_id: conversationId,
           history,
         }),
@@ -161,13 +175,25 @@ export default function ChatWidget({ gatewayUrl = GATEWAY_URL }: ChatWidgetProps
       }
 
       const data = await response.json();
+      
+      let finalContent = data.response || 'No pude generar una respuesta.';
+      
+      // Intercept routing commands
+      const routeMatch = finalContent.match(/\[MAP_ROUTE_TO:([a-zA-Z0-9_-]+)\]/);
+      if (routeMatch) {
+        const destination = routeMatch[1];
+        // Strip the command from the UI
+        finalContent = finalContent.replace(routeMatch[0], '').trim();
+        // Dispatch event for the Map to trace the route
+        window.dispatchEvent(new CustomEvent('ROUTE_COMMAND', { detail: { destination } }));
+      }
 
       setMessages(prev => [
         ...prev,
         {
           id: `resp_${Date.now()}`,
           role: 'assistant',
-          content: data.response || 'No pude generar una respuesta.',
+          content: finalContent,
           timestamp: new Date(),
         },
       ]);
@@ -205,23 +231,15 @@ export default function ChatWidget({ gatewayUrl = GATEWAY_URL }: ChatWidgetProps
 
   return (
     <>
-      {/* Floating trigger button */}
+      {/* Side Tab Trigger */}
       <button
-        className={`chat-trigger ${isOpen ? 'chat-trigger--open' : ''}`}
-        onClick={() => setIsOpen(prev => !prev)}
+        className={`chat-side-tab ${isOpen ? 'chat-side-tab--hidden' : ''}`}
+        onClick={() => setIsOpen(true)}
         aria-label="Abrir asistente Nexus"
         id="chat-trigger-btn"
       >
-        {isOpen ? (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        ) : (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        )}
-        {!isOpen && <span className="chat-trigger__badge">IA</span>}
+        <span className="chat-side-tab__icon">✨</span>
+        <span className="chat-side-tab__text">Asistente IA</span>
       </button>
 
       {/* Chat panel */}
@@ -235,7 +253,14 @@ export default function ChatWidget({ gatewayUrl = GATEWAY_URL }: ChatWidgetProps
               <div className="chat-header__subtitle">Asistente UCE-Nexus</div>
             </div>
           </div>
-          <div className={`chat-header__role ${roleBadge.cls}`}>{roleBadge.label}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className={`chat-header__role ${roleBadge.cls}`}>{roleBadge.label}</div>
+            <button className="chat-close-btn" onClick={() => setIsOpen(false)} aria-label="Cerrar chat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Messages */}

@@ -21,6 +21,7 @@ services:
       - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/UCE-Nexus/protocol/openid-connect/certs
       - ENROLLMENT_SERVICE_URL=http://ms-03-enrollment:3001
       - AI_AGENT_URL=http://ms-08-ai-agent:8001
+      - GEOCAMPUS_SERVICE_URL=http://ms-09-geocampus:8009
     depends_on:
       - keycloak
       - ms-06-booking
@@ -140,6 +141,26 @@ services:
     networks:
       - nexus-network
 
+  # MS-09: GeoCampus Service (Rust)
+  ms-09-geocampus:
+    build:
+      context: ../../services/ms-09-geocampus
+      dockerfile: Dockerfile
+    container_name: nexus-ms-09-geocampus
+    restart: unless-stopped
+    ports:
+      - "8009:8009"
+    environment:
+      - PORT=8009
+      - DATABASE_URL=postgres://geocampus_user:geocampus_password@postgres-geocampus:5432/uce_geocampus_dev
+      - MQTT_HOST=mqtt-broker
+      - MQTT_PORT=1883
+    depends_on:
+      - postgres-geocampus
+      - mqtt-broker
+    networks:
+      - nexus-network
+
   # ==========================================
   # 2. SEGURIDAD E IDENTIDAD (Keycloak)
   # ==========================================
@@ -226,6 +247,21 @@ services:
       - pg-enrollment-data:/var/lib/postgresql/data
     ports:
       - "5434:5432"
+    networks:
+      - nexus-network
+
+  postgres-geocampus:
+    image: postgres:15-alpine
+    container_name: nexus-db-geocampus
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: geocampus_user
+      POSTGRES_PASSWORD: geocampus_password
+      POSTGRES_DB: uce_geocampus_dev
+    volumes:
+      - pg-geocampus-data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
     networks:
       - nexus-network
 
@@ -337,6 +373,8 @@ volumes:
   pg-catalog-data:
     driver: local
   pg-enrollment-data:
+    driver: local
+  pg-geocampus-data:
     driver: local
   mongo-data:
     driver: local
