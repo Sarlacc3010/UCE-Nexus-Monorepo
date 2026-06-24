@@ -1,0 +1,16 @@
+{
+  "name": "ms-09-geocampus",
+  "version": "1.0.0",
+  "description": "A microservice planned to manage interactive maps, physical classroom coordinates, laboratories, and indoor telemetry data for the **UCE-Nexus** Smart-Campus portal.",
+  "main": "simulator.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "mqtt": "^5.15.1"
+  }
+}
