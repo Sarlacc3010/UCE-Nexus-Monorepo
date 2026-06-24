@@ -86,6 +86,21 @@ services:
     networks:
       - nexus-db-network
 
+  postgres-geocampus:
+    image: postgres:15-alpine
+    container_name: nexus-db-geocampus
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: geocampus_user
+      POSTGRES_PASSWORD: geocampus_password
+      POSTGRES_DB: uce_geocampus_dev
+    volumes:
+      - pg-geocampus-data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    networks:
+      - nexus-db-network
+
   mongodb:
     image: mongo:7.0
     container_name: nexus-mongo
@@ -179,6 +194,8 @@ volumes:
   pg-catalog-data:
     driver: local
   pg-enrollment-data:
+    driver: local
+  pg-geocampus-data:
     driver: local
   mongo-data:
     driver: local
