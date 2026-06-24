@@ -10,6 +10,7 @@ import {
   Globe,
   LogOut
 } from 'lucide-react';
+import CampusMap from './components/CampusMap';
 
 const ChatWidget = lazy(() => import('chatbot/ChatWidget'));
 
@@ -77,6 +78,8 @@ export default function CampusApp({ activeTab: propActiveTab, token: propToken }
     switch (activeTab) {
       case 'gateway':
         return <App />;
+      case 'maps':
+        return <CampusMap />;
       default:
         return (
           <div className="coming-soon-container" style={{
@@ -105,7 +108,7 @@ export default function CampusApp({ activeTab: propActiveTab, token: propToken }
   // If embedded in web-host, only render the tab content (without shell, header, sidebar, footer)
   if (isEmbedded) {
     return (
-      <div className="campus-embedded-wrapper" style={{ width: '100%' }}>
+      <div className="campus-embedded-wrapper" style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {renderTabContent()}
       </div>
     );

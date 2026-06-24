@@ -85,7 +85,27 @@ const getUserInfoFromToken = (jwtToken: string) => {
 };
 
 function App() {
-  const [activeTab, setActiveTab] = useState<string>('home');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const hash = window.location.hash.replace('#', '');
+    return hash || 'home';
+  });
+
+  useEffect(() => {
+    // Sincronizar el hash con la pestaña activa
+    window.location.hash = activeTab;
+  }, [activeTab]);
+
+  useEffect(() => {
+    // Escuchar cambios de hash (ej. botones atrás/adelante del navegador)
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && hash !== activeTab) {
+        setActiveTab(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [activeTab]);
   
   const getInitialToken = () => {
     const stored = localStorage.getItem('uce_token');
@@ -110,6 +130,37 @@ function App() {
     solicitudes: true,
     administracion: false
   });
+
+  useEffect(() => {
+    const groupMapping: Record<string, string> = {
+      matriculas: 'academicos',
+      calificaciones: 'academicos',
+      malla: 'academicos',
+      seguro_vida: 'academicos',
+      matricula_vigente: 'academicos',
+      aranceles: 'pagos',
+      estacionamiento: 'pagos',
+      matriculacion: 'reservas',
+      auditorio: 'reservas',
+      canchas: 'reservas',
+      maps: 'maps',
+      eventos: 'maps',
+      tercera_matricula: 'solicitudes',
+      retiro: 'solicitudes',
+      dashboard: 'administracion',
+      academic_admin: 'administracion',
+      users_admin: 'administracion',
+      gateway: 'administracion',
+    };
+
+    const group = groupMapping[activeTab];
+    if (group) {
+      setCollapsedGroups(prev => ({
+        ...prev,
+        [group]: false // Expandir el grupo al que pertenece la pestaña activa
+      }));
+    }
+  }, [activeTab]);
 
   const toggleGroup = (group: string) => {
     setCollapsedGroups(prev => ({
@@ -569,7 +620,7 @@ function App() {
 
             {/* Contenido Principal */}
             <main className="nexus-main-content">
-              <section className="nexus-viewport-container">
+              <section className={`nexus-viewport-container${activeTab === 'maps' ? ' nexus-viewport-map' : ''}`}>
                 <Suspense fallback={
                   <div className="mfe-loader">
                     <div className="loader-spinner animate-spin-loader"></div>
