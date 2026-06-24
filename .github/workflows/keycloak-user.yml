@@ -1,0 +1,92 @@
+name: Keycloak User Management
+
+on:
+  workflow_dispatch:
+
+jobs:
+  manage-user:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH and Jump Host
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.QA_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          
+          cat <<EOF > ~/.ssh/config
+          Host bastion
+            HostName ${{ secrets.QA_BASTION_IP }}
+            User ubuntu
+            IdentityFile ~/.ssh/id_rsa
+            StrictHostKeyChecking no
+
+          Host db-server
+            HostName ${{ secrets.QA_DB_PRIVATE_IP }}
+            User ubuntu
+            IdentityFile ~/.ssh/id_rsa
+            ProxyJump bastion
+            StrictHostKeyChecking no
+          EOF
+
+      - name: Create User via Keycloak API
+        run: |
+          ssh db-server << 'EOF'
+            echo "Requesting Admin Token..."
+            TOKEN_RES=$(curl -s -X POST "http://localhost:8080/realms/master/protocol/openid-connect/token" \
+              -H "Content-Type: application/x-www-form-urlencoded" \
+              -d "username=admin" \
+              -d "password=admin" \
+              -d "grant_type=password" \
+              -d "client_id=admin-cli")
+              
+            TOKEN=$(echo $TOKEN_RES | grep -o '"access_token":"[^"]*' | grep -o '[^"]*$')
+            
+            if [ -z "$TOKEN" ]; then
+              echo "Failed to get token: $TOKEN_RES"
+              exit 1
+            fi
+            
+            echo "Checking if UCE-Nexus realm exists..."
+            REALM_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -X GET "http://localhost:8080/admin/realms/UCE-Nexus" -H "Authorization: Bearer $TOKEN")
+            
+            if [ "$REALM_CHECK" == "404" ]; then
+              echo "CRITICAL: The realm 'UCE-Nexus' DOES NOT EXIST on this server!"
+              echo "Creating realm UCE-Nexus..."
+              curl -s -X POST "http://localhost:8080/admin/realms" \
+                -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" \
+                -d '{"realm": "UCE-Nexus", "enabled": true}'
+                
+              echo "Creating client uce-client..."
+              curl -s -X POST "http://localhost:8080/admin/realms/UCE-Nexus/clients" \
+                -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" \
+                -d '{"clientId": "uce-client", "enabled": true, "publicClient": true, "directAccessGrantsEnabled": true, "redirectUris": ["*"], "webOrigins": ["*"]}'
+            fi
+            
+            echo "Creating User Abel Navarrete..."
+            CREATE_RES=$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://localhost:8080/admin/realms/UCE-Nexus/users" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{"username": "aenavarreteg1", "email": "aenavarreteg1@uce.edu.ec", "firstName": "Abel", "lastName": "Navarrete", "enabled": true, "credentials": [{"type": "password", "value": "abel3010", "temporary": false}], "realmRoles": ["user", "admin"]}')
+            
+            if [ "$CREATE_RES" == "201" ]; then
+              echo "User created successfully!"
+            elif [ "$CREATE_RES" == "409" ]; then
+              echo "User already exists! Resetting password just in case..."
+              
+              # Obtener ID del usuario
+              USER_ID=$(curl -s -X GET "http://localhost:8080/admin/realms/UCE-Nexus/users?username=aenavarreteg1" -H "Authorization: Bearer $TOKEN" | grep -o '"id":"[^"]*' | head -1 | grep -o '[^"]*$')
+              
+              if [ ! -z "$USER_ID" ]; then
+                curl -s -X PUT "http://localhost:8080/admin/realms/UCE-Nexus/users/$USER_ID/reset-password" \
+                  -H "Authorization: Bearer $TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d '{"type": "password", "value": "abel3010", "temporary": false}'
+                echo "Password reset successfully!"
+              fi
+            else
+              echo "Failed to create user. HTTP Code: $CREATE_RES"
+              exit 1
+            fi
+          EOF

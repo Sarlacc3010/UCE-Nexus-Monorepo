@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 const ChatWidget = lazy(() => import('chatbot/ChatWidget'));
+import ErrorBoundary from './ErrorBoundary';
 
 // Local SVG icons for Facebook and Instagram to avoid Lucide resolution issues
 const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -633,9 +634,11 @@ export default function AcademicApp({ activeTab: propActiveTab, token: propToken
       </footer>
 
       {/* Standalone ChatWidget */}
-      <Suspense fallback={null}>
-        <ChatWidget gatewayUrl={API_URL} />
-      </Suspense>
+      <ErrorBoundary fallback={null}>
+        <Suspense fallback={null}>
+          <ChatWidget gatewayUrl={API_URL} />
+        </Suspense>
+      </ErrorBoundary>
     </div>
   );
 }

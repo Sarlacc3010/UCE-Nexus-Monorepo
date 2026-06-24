@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import './App.css'
 
 const ChatWidget = lazy(() => import('chatbot/ChatWidget'))
+import ErrorBoundary from './ErrorBoundary';
 
 interface GatewayHealth {
   status: string;
@@ -256,9 +257,11 @@ function App() {
           </div>
         )}
       </div>
-      <Suspense fallback={null}>
-        <ChatWidget gatewayUrl={API_URL} />
-      </Suspense>
+      <ErrorBoundary fallback={null}>
+        <Suspense fallback={null}>
+          <ChatWidget gatewayUrl={API_URL} />
+        </Suspense>
+      </ErrorBoundary>
     </div>
   )
 }
