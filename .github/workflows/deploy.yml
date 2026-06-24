@@ -6,6 +6,7 @@ on:
       - QA
     tags:
       - 'v*'
+  workflow_dispatch:
 
 env:
   DOCKER_HUB_TAG: qa
