@@ -126,6 +126,11 @@ jobs:
           cd services/ms-11-catalog
           cargo test
 
+      - name: Run Rust Tests (Geocampus)
+        run: |
+          cd services/ms-09-geocampus
+          cargo test
+
   # ==========================================
   # 2.8. CI: Pruebas de Carga (Load Testing)
   # ==========================================

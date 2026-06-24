@@ -4,7 +4,7 @@
   "description": "A microservice planned to manage interactive maps, physical classroom coordinates, laboratories, and indoor telemetry data for the **UCE-Nexus** Smart-Campus portal.",
   "main": "simulator.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"No JS tests specified for Rust project\" && exit 0"
   },
   "keywords": [],
   "author": "",
