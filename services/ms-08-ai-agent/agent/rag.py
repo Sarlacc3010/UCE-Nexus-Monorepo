@@ -24,16 +24,28 @@ EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
 class RAGEngine:
     def __init__(self):
-        self.client = chromadb.PersistentClient(path=CHROMA_PATH)
-        self.embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name=EMBEDDING_MODEL
-        )
-        self.collection = self.client.get_or_create_collection(
-            name=COLLECTION_NAME,
-            embedding_function=self.embedding_fn,
-            metadata={"hnsw:space": "cosine"},
-        )
         self._indexed = False
+        self.collection = None
+        self.client = None
+        self.embedding_fn = None
+        self._initialized = False
+
+    def _initialize(self):
+        if self._initialized: return
+        self._initialized = True
+        try:
+            self.client = chromadb.PersistentClient(path=CHROMA_PATH)
+            self.embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
+                model_name=EMBEDDING_MODEL
+            )
+            self.collection = self.client.get_or_create_collection(
+                name=COLLECTION_NAME,
+                embedding_function=self.embedding_fn,
+                metadata={"hnsw:space": "cosine"},
+            )
+        except Exception as e:
+            logger.error(f"Failed to initialize RAG Engine: {e}")
+            logger.warning("RAG Engine will be disabled. Agent will not have knowledge base access.")
 
     def _chunk_markdown(self, text: str, chunk_size: int = 800, overlap: int = 100) -> list[str]:
         """Split markdown text into logical chunks, ensuring no tiny or empty chunks."""
@@ -81,9 +93,10 @@ class RAGEngine:
         Skips files that haven't changed (by hash).
         Returns the number of new chunks added.
         """
+        self._initialize()
         kb_path = Path(KNOWLEDGE_BASE_PATH)
-        if not kb_path.exists():
-            logger.warning(f"Knowledge base path not found: {KNOWLEDGE_BASE_PATH}")
+        if not kb_path.exists() or not self.collection:
+            logger.warning(f"Knowledge base path not found or collection disabled: {KNOWLEDGE_BASE_PATH}")
             return 0
 
         new_chunks = 0
@@ -199,8 +212,12 @@ class RAGEngine:
 
         Returns list of {text, source, score} dicts.
         """
+        self._initialize()
         if not self._indexed:
             self.index_documents()
+
+        if not self.collection:
+            return []
 
         results = self.collection.query(
             query_texts=[query],
