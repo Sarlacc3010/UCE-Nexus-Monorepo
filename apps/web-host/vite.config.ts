@@ -11,7 +11,7 @@ export default defineConfig({
       remotes: {
         academic: '/academic-mf/assets/remoteEntry.js',
         gateway: '/campus-mf/assets/remoteEntry.js',
-        chatbot: 'http://localhost:5003/assets/remoteEntry.js',
+        chatbot: '/chatbot-mf/assets/remoteEntry.js',
       },
       shared: {
         react: { singleton: true, requiredVersion: '^19.2.6' },
