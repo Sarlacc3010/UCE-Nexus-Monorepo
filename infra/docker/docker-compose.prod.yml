@@ -149,7 +149,7 @@ services:
     ports:
       - "8009:8009"
     environment:
-      - DATABASE_URL=postgres://geocampus_user:geocampus_password@${DB_PRIVATE_IP:-localhost}:5435/uce_geocampus_dev
+      - DATABASE_URL=postgres://uce:password@${DB_PRIVATE_IP:-localhost}:5432/uce_nexus_prod
       - MQTT_HOST=${DB_PRIVATE_IP:-localhost}
       - MQTT_PORT=1883
     networks:
