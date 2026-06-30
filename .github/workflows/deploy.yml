@@ -1,9 +1,13 @@
 name: UCE-Nexus CD Deployment
 
 on:
-  push:
+  workflow_run:
+    workflows: ["UCE-Nexus CI Pipeline"]
+    types:
+      - completed
     branches:
       - QA
+  push:
     tags:
       - 'v*'
   workflow_dispatch:
@@ -15,9 +19,12 @@ jobs:
   deploy:
     name: Deploy to EC2 via Bastion Jump
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       # ==========================================
       # 1. Configurar Llave SSH e Identidad de Red
