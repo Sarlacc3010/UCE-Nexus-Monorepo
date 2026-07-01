@@ -12,6 +12,7 @@ import * as protoLoader from '@grpc/proto-loader';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger';
 import logger from './logger';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 
 dotenv.config();
 
@@ -353,12 +354,39 @@ app.post('/api/chat/secure', authenticateJWT, async (req: Request, res: Response
     }
 });
 
+// ─── GeoCampus Service (MS-09) Proxy ─────────────────────────────────────────
+const GEOCAMPUS_SERVICE_URL = process.env.GEOCAMPUS_SERVICE_URL || 'http://localhost:8009';
+
+const geocampusProxy = createProxyMiddleware({
+    target: GEOCAMPUS_SERVICE_URL,
+    changeOrigin: true,
+    ws: true,
+    pathRewrite: {
+        '^/api/geocampus': '/api',
+        '^/ws/geocampus': '/ws',
+    },
+    onError: (err: any, req: any, res: any) => {
+        logger.error(`Error proxying to geocampus service: ${err.message}`);
+    }
+});
+
+app.use('/api/geocampus', geocampusProxy);
+app.use('/ws/geocampus', geocampusProxy);
+
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
         logger.info(`🚀 UCE-Nexus API Gateway corriendo en http://localhost:${PORT}`);
         logger.info(`🛡️  Seguridad JWT y cliente gRPC habilitados.`);
         logger.info(`📖 Swagger UI disponible en http://localhost:${PORT}/api-docs`);
         logger.info(`🤖 AI Agent proxy habilitado → ${AI_AGENT_URL}`);
+    });
+
+    server.on('upgrade', (req, socket, head) => {
+        if (req.url?.startsWith('/ws/geocampus')) {
+            if (typeof (geocampusProxy as any).upgrade === 'function') {
+                (geocampusProxy as any).upgrade(req, socket, head);
+            }
+        }
     });
 }
 

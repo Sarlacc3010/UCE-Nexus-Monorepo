@@ -381,6 +381,14 @@ body {
   box-sizing: border-box;
 }
 
+/* Cuando el mapa está activo, quitamos el padding y lo dejamos ocupar todo el espacio */
+.nexus-viewport-map {
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+
 /* FOOTER INFERIOR */
 .nexus-footer {
   width: 100%;

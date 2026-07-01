@@ -1,11 +1,16 @@
 name: UCE-Nexus CD Deployment
 
 on:
-  push:
+  workflow_run:
+    workflows: ["UCE-Nexus CI Pipeline"]
+    types:
+      - completed
     branches:
       - QA
+  push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 env:
   DOCKER_HUB_TAG: qa
@@ -14,9 +19,12 @@ jobs:
   deploy:
     name: Deploy to EC2 via Bastion Jump
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       # ==========================================
       # 1. Configurar Llave SSH e Identidad de Red
@@ -189,3 +197,64 @@ jobs:
           
           # Limpiar imágenes obsoletas
           ssh app-server "docker image prune -f"
+
+      # ==========================================
+      # 6. Configurar Realm y Usuario en Keycloak
+      # ==========================================
+      - name: Configure Keycloak
+        run: |
+          ssh db-server << 'EOF'
+            echo "Waiting for Keycloak to be ready..."
+            sleep 15
+            
+            echo "Requesting Admin Token..."
+            TOKEN_RES=$(curl -s -X POST "http://localhost:8080/realms/master/protocol/openid-connect/token" \
+              -H "Content-Type: application/x-www-form-urlencoded" \
+              -d "username=admin" \
+              -d "password=admin" \
+              -d "grant_type=password" \
+              -d "client_id=admin-cli")
+              
+            TOKEN=$(echo $TOKEN_RES | grep -o '"access_token":"[^"]*' | grep -o '[^"]*$')
+            
+            if [ -z "$TOKEN" ]; then
+              echo "Failed to get token: $TOKEN_RES"
+              exit 1
+            fi
+            
+            echo "Checking if UCE-Nexus realm exists..."
+            REALM_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -X GET "http://localhost:8080/admin/realms/UCE-Nexus" -H "Authorization: Bearer $TOKEN")
+            
+            if [ "$REALM_CHECK" == "404" ]; then
+              echo "Creating realm UCE-Nexus..."
+              curl -s -X POST "http://localhost:8080/admin/realms" \
+                -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" \
+                -d '{"realm": "UCE-Nexus", "enabled": true}'
+                
+              echo "Creating client uce-client..."
+              curl -s -X POST "http://localhost:8080/admin/realms/UCE-Nexus/clients" \
+                -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" \
+                -d '{"clientId": "uce-client", "enabled": true, "publicClient": true, "directAccessGrantsEnabled": true, "redirectUris": ["*"], "webOrigins": ["*"]}'
+            fi
+            
+            echo "Creating User Abel Navarrete..."
+            CREATE_RES=$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://localhost:8080/admin/realms/UCE-Nexus/users" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{"username": "aenavarreteg1", "email": "aenavarreteg1@uce.edu.ec", "firstName": "Abel", "lastName": "Navarrete", "enabled": true, "credentials": [{"type": "password", "value": "abel3010", "temporary": false}], "realmRoles": ["user", "admin"]}')
+            
+            if [ "$CREATE_RES" == "201" ]; then
+              echo "User created successfully!"
+            elif [ "$CREATE_RES" == "409" ]; then
+              echo "User already exists! Resetting password just in case..."
+              USER_ID=$(curl -s -X GET "http://localhost:8080/admin/realms/UCE-Nexus/users?username=aenavarreteg1" -H "Authorization: Bearer $TOKEN" | grep -o '"id":"[^"]*' | head -1 | grep -o '[^"]*$')
+              if [ ! -z "$USER_ID" ]; then
+                curl -s -X PUT "http://localhost:8080/admin/realms/UCE-Nexus/users/$USER_ID/reset-password" \
+                  -H "Authorization: Bearer $TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d '{"type": "password", "value": "abel3010", "temporary": false}'
+              fi
+            fi
+          EOF

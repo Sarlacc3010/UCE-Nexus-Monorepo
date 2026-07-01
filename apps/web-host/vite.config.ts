@@ -11,7 +11,7 @@ export default defineConfig({
       remotes: {
         academic: '/academic-mf/assets/remoteEntry.js',
         gateway: '/campus-mf/assets/remoteEntry.js',
-        chatbot: 'http://localhost:5003/assets/remoteEntry.js',
+        chatbot: '/chatbot-mf/assets/remoteEntry.js',
       },
       shared: {
         react: { singleton: true, requiredVersion: '^19.2.6' },
@@ -29,6 +29,29 @@ export default defineConfig({
     strictPort: true,
     headers: {
       "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      },
+      '/ws': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        ws: true
+      },
+      '/academic-mf': {
+        target: 'http://localhost:5001',
+        changeOrigin: true
+      },
+      '/campus-mf': {
+        target: 'http://localhost:5002',
+        changeOrigin: true
+      },
+      '/chatbot-mf': {
+        target: 'http://localhost:5003',
+        changeOrigin: true
+      }
     }
   },
   preview: {

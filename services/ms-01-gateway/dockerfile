@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalar todas las dependencias (incluyendo devDependencies para compilar)
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 # Copiar el código fuente y la configuración
 COPY . .
@@ -30,7 +30,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalar únicamente dependencias de producción (seguridad y ligereza)
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
 
 # Copiar el código compilado desde la etapa de construcción
 COPY --from=builder /app/dist ./dist

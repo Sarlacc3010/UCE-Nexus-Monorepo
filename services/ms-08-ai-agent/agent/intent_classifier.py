@@ -22,6 +22,7 @@ Tu única tarea es clasificar el mensaje del usuario en UNA de estas categorías
 Categorías disponibles:
 - "public_info": El usuario pregunta sobre la UCE, facultades, carreras, historia, contactos, reglamentos, servicios generales, matrícula, procesos administrativos.
 - "public_events": El usuario pregunta sobre eventos del campus: ferias, talleres, conciertos, torneos, conferencias, calendario académico.
+- "campus_route": El usuario pregunta cómo llegar de un punto a otro dentro de la universidad, pide indicaciones o busca la ruta más corta entre facultades.
 - "platform_status": El usuario pregunta sobre el estado o funcionamiento de la plataforma UCE-Nexus.
 - "student_labs": El usuario quiere ver información de laboratorios, verificar disponibilidad, o listar recursos reservables.
 - "student_booking": El usuario quiere crear, cancelar o gestionar una reserva de laboratorio o auditorio.

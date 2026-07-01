@@ -4,6 +4,7 @@ import { MapPin, Clock, ArrowRight, ArrowLeft } from 'lucide-react';
 import './App.css';
 
 const ChatWidget = lazy(() => import('chatbot/ChatWidget'));
+import ErrorBoundary from './ErrorBoundary';
 
 // Mapeo de laboratorios reales del catálogo con su capacidad y ubicación
 const LABS_CATALOG = [
@@ -416,9 +417,11 @@ function App() {
           </div>
         </div>
       )}
-      <Suspense fallback={null}>
-        <ChatWidget gatewayUrl={API_URL} />
-      </Suspense>
+      <ErrorBoundary fallback={null}>
+        <Suspense fallback={null}>
+          <ChatWidget gatewayUrl={API_URL} />
+        </Suspense>
+      </ErrorBoundary>
     </div>
   );
 }
