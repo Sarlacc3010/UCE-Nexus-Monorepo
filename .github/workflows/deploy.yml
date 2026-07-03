@@ -206,13 +206,13 @@ jobs:
           ssh db-server << 'EOF'
             echo "Waiting for Keycloak to be ready..."
             
-            # Wait up to 2 minutes for Keycloak to respond
-            for i in {1..24}; do
+            # Wait up to 3 minutes for Keycloak to respond
+            for i in {1..36}; do
               if curl -s -o /dev/null "http://localhost:8080"; then
                 echo "Keycloak is responding!"
                 break
               fi
-              echo "Still waiting... ($i/24)"
+              echo "Still waiting... ($i/36)"
               sleep 5
             done
             
@@ -228,6 +228,8 @@ jobs:
             
             if [ -z "$TOKEN" ]; then
               echo "Failed to get token: $TOKEN_RES"
+              echo "==== KEYCLOAK LOGS ===="
+              docker logs nexus-keycloak --tail 50
               exit 1
             fi
             
