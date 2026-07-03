@@ -125,7 +125,7 @@ jobs:
           pip install -r services/ms-08-ai-agent/requirements.txt
 
       - name: Install Monorepo Dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Run Unit Tests (Turbo)
         run: npm run test
