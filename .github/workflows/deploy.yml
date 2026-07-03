@@ -205,7 +205,16 @@ jobs:
         run: |
           ssh db-server << 'EOF'
             echo "Waiting for Keycloak to be ready..."
-            sleep 15
+            
+            # Wait up to 2 minutes for Keycloak to respond
+            for i in {1..24}; do
+              if curl -s -o /dev/null "http://localhost:8080"; then
+                echo "Keycloak is responding!"
+                break
+              fi
+              echo "Still waiting... ($i/24)"
+              sleep 5
+            done
             
             echo "Requesting Admin Token..."
             TOKEN_RES=$(curl -s -X POST "http://localhost:8080/realms/master/protocol/openid-connect/token" \
