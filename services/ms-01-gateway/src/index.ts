@@ -20,10 +20,17 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
+
+// Proxy para ms-02-identity (Debe ir ANTES de express.json para evitar que el body parser consuma el stream y rompa el proxy en POST)
+const identityServiceUrl = process.env.IDENTITY_SERVICE_URL || 'http://localhost:4002';
+app.use('/api/identity', createProxyMiddleware({ target: identityServiceUrl, changeOrigin: true }));
+
 app.use(express.json());
 
 // Documentación Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+
 
 // 1. SEGURIDAD: Configuración de Keycloak
 const client = jwksClient({
