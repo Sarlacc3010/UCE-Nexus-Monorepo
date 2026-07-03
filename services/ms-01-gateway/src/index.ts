@@ -25,6 +25,10 @@ app.use(express.json());
 // Documentación Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// Proxy para ms-02-identity (No requiere auth del gateway, auth lo hace Keycloak o el propio BFF si es necesario)
+const identityServiceUrl = process.env.IDENTITY_SERVICE_URL || 'http://localhost:4002';
+app.use('/api/identity', createProxyMiddleware({ target: identityServiceUrl, changeOrigin: true }));
+
 // 1. SEGURIDAD: Configuración de Keycloak
 const client = jwksClient({
     jwksUri: process.env.KEYCLOAK_JWKS_URI || 'http://localhost:8080/realms/UCE-Nexus/protocol/openid-connect/certs'
