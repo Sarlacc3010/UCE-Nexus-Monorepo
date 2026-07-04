@@ -13,32 +13,32 @@ services:
     networks:
       - nexus-network
 
-#  web-academic:
-#    image: ${DOCKER_HUB_USER:-abel3010}/web-academic:${IMAGE_TAG:-latest}
-#    container_name: nexus-web-academic
-#    restart: unless-stopped
-#    ports:
-#      - "5001:80"
-#    networks:
-#      - nexus-network
-#
-#  web-campus:
-#    image: ${DOCKER_HUB_USER:-abel3010}/web-campus:${IMAGE_TAG:-latest}
-#    container_name: nexus-web-campus
-#    restart: unless-stopped
-#    ports:
-#      - "5002:80"
-#    networks:
-#      - nexus-network
-#
-#  web-chatbot:
-#    image: ${DOCKER_HUB_USER:-abel3010}/web-chatbot:${IMAGE_TAG:-latest}
-#    container_name: nexus-web-chatbot
-#    restart: unless-stopped
-#    ports:
-#      - "5003:80"
-#    networks:
-#      - nexus-network
+  web-academic:
+    image: ${DOCKER_HUB_USER:-abel3010}/web-academic:${IMAGE_TAG:-latest}
+    container_name: nexus-web-academic
+    restart: unless-stopped
+    ports:
+      - "5001:80"
+    networks:
+      - nexus-network
+
+  web-campus:
+    image: ${DOCKER_HUB_USER:-abel3010}/web-campus:${IMAGE_TAG:-latest}
+    container_name: nexus-web-campus
+    restart: unless-stopped
+    ports:
+      - "5002:80"
+    networks:
+      - nexus-network
+
+  web-chatbot:
+    image: ${DOCKER_HUB_USER:-abel3010}/web-chatbot:${IMAGE_TAG:-latest}
+    container_name: nexus-web-chatbot
+    restart: unless-stopped
+    ports:
+      - "5003:80"
+    networks:
+      - nexus-network
 
   # ==========================================
   # 1. MICROSERVICIOS DE LA APLICACIÓN
