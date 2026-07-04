@@ -1,13 +1,9 @@
 name: UCE-Nexus CD Deployment
 
 on:
-  workflow_run:
-    workflows: ["UCE-Nexus CI Pipeline"]
-    types:
-      - completed
+  push:
     branches:
       - QA
-  push:
     tags:
       - 'v*'
   workflow_dispatch:
