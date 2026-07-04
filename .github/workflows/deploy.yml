@@ -206,32 +206,35 @@ jobs:
       - name: Configure Keycloak
         run: |
           ssh db-server << 'EOF'
-            echo "Waiting for Keycloak to be ready..."
+            echo "Waiting for Keycloak token endpoint to be fully ready..."
             
-            # Wait up to 3 minutes for Keycloak to respond
-            for i in {1..36}; do
-              if curl -s -o /dev/null "http://localhost:8080"; then
-                echo "Keycloak is responding!"
+            TOKEN=""
+            # Intentar obtener token hasta por 5 minutos (60 intentos x 5s)
+            # Esto evita la race condition donde el HTTP de Keycloak responde
+            # pero el realm master todavia no esta inicializado
+            for i in {1..60}; do
+              TOKEN_RES=$(curl -s -X POST "http://localhost:8080/realms/master/protocol/openid-connect/token" \
+                -H "Content-Type: application/x-www-form-urlencoded" \
+                -d "username=admin" \
+                -d "password=admin" \
+                -d "grant_type=password" \
+                -d "client_id=admin-cli" 2>/dev/null)
+              
+              TOKEN=$(echo "$TOKEN_RES" | grep -o '"access_token":"[^"]*' | grep -o '[^"]*$')
+              
+              if [ ! -z "$TOKEN" ]; then
+                echo "Keycloak listo! Token obtenido en intento $i."
                 break
               fi
-              echo "Still waiting... ($i/36)"
+              
+              echo "Keycloak aun no listo (intento $i/60): $(echo $TOKEN_RES | cut -c1-100)"
               sleep 5
             done
             
-            echo "Requesting Admin Token..."
-            TOKEN_RES=$(curl -s -X POST "http://localhost:8080/realms/master/protocol/openid-connect/token" \
-              -H "Content-Type: application/x-www-form-urlencoded" \
-              -d "username=admin" \
-              -d "password=admin" \
-              -d "grant_type=password" \
-              -d "client_id=admin-cli")
-              
-            TOKEN=$(echo $TOKEN_RES | grep -o '"access_token":"[^"]*' | grep -o '[^"]*$')
-            
             if [ -z "$TOKEN" ]; then
-              echo "Failed to get token: $TOKEN_RES"
+              echo "ERROR: No se pudo obtener token de Keycloak despues de 5 minutos"
               echo "==== KEYCLOAK LOGS ===="
-              docker logs nexus-keycloak --tail 50
+              docker logs nexus-keycloak --tail 80
               exit 1
             fi
             
