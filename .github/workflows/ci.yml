@@ -101,8 +101,18 @@ jobs:
 
       - name: Set up Protobuf Compiler (protoc)
         run: |
-          sudo apt-get update && sudo apt-get install -y protobuf-compiler
+          # Instalar protoc desde GitHub releases (apt-get da protoc 3.12 que es incompatible con prost-build 0.12)
+          PROTOC_VERSION="25.3"
+          curl -sLO "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip"
+          sudo unzip -q protoc-${PROTOC_VERSION}-linux-x86_64.zip -d /usr/local
           protoc --version
+
+      - name: Set up Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            services/ms-11-catalog
+            services/ms-09-geocampus
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -114,6 +124,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache-dependency-path: 'services/ms-06-booking/go.sum'
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -131,6 +142,9 @@ jobs:
         run: npm run test
 
       - name: Run Rust Tests (Catalog)
+        env:
+          SQLX_OFFLINE: true
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test
         run: |
           cd services/ms-11-catalog
           cargo test
