@@ -19,7 +19,8 @@ import {
   Users,
   LogOut,
   Globe,
-  ChevronDown
+  ChevronDown,
+  History
 } from 'lucide-react'
 
 // Iconos SVG locales para Facebook e Instagram
@@ -40,6 +41,7 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
 // Importación dinámica a través de la red (Vite Module Federation)
 const AcademicApp = lazy(() => import('academic/AcademicApp'))
 const CampusApp = lazy(() => import('gateway/CampusApp'))
+const PaymentsApp = lazy(() => import('payments/PaymentsApp'))
 const ChatWidget = lazy(() => import('chatbot/ChatWidget'))
 import ErrorBoundary from './ErrorBoundary';
 
@@ -69,7 +71,7 @@ const getUserInfoFromToken = (jwtToken: string) => {
     
     // Obtener rol
     let role = 'Estudiante';
-    const realmRoles = payload.realm_access?.roles || [];
+    const realmRoles = payload.roles || payload.realm_access?.roles || [];
     if (realmRoles.includes('admin') || realmRoles.includes('ADMIN')) {
       role = 'Administrador';
     } else {
@@ -141,6 +143,7 @@ function App() {
       matricula_vigente: 'academicos',
       aranceles: 'pagos',
       estacionamiento: 'pagos',
+      historial_pagos: 'pagos',
       matriculacion: 'reservas',
       auditorio: 'reservas',
       canchas: 'reservas',
@@ -257,7 +260,7 @@ function App() {
         setLoginError(data.error_description || 'Usuario o contraseña incorrectos.');
       }
     } catch (error: any) {
-      setLoginError('No se pudo conectar con Keycloak. ¿Está encendido el contenedor en el puerto 8080?');
+      setLoginError('No se pudo conectar con el servicio de identidad. Verifica tu conexión.');
     } finally {
       setIsLoggingIn(false);
     }
@@ -284,6 +287,8 @@ function App() {
 
     if (academicTabs.includes(activeTab)) {
       return <AcademicApp activeTab={activeTab} token={token} />;
+    } else if (['aranceles', 'estacionamiento', 'historial_pagos'].includes(activeTab)) {
+      return <PaymentsApp activeTab={activeTab} token={token} />;
     } else {
       return <CampusApp activeTab={activeTab} token={token} />;
     }
@@ -532,6 +537,13 @@ function App() {
                         >
                           <span className="nexus-nav-item-icon"><Car size={18} /></span>
                           Pago de estacionamiento
+                        </button>
+                        <button 
+                          onClick={() => setActiveTab('historial_pagos')} 
+                          className={`nexus-nav-item ${activeTab === 'historial_pagos' ? 'active' : ''}`}
+                        >
+                          <span className="nexus-nav-item-icon"><History size={18} /></span>
+                          Historial de pagos
                         </button>
                       </div>
                     </div>

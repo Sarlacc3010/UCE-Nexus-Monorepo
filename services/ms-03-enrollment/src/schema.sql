@@ -434,3 +434,21 @@ CREATE TABLE IF NOT EXISTS student_requests (
 CREATE INDEX IF NOT EXISTS idx_requests_student    ON student_requests(student_id);
 CREATE INDEX IF NOT EXISTS idx_requests_estado     ON student_requests(estado);
 CREATE INDEX IF NOT EXISTS idx_requests_tipo       ON student_requests(tipo_solicitud);
+
+-- ==========================================================
+-- ESTADO DE MATRÍCULA SEMESTRAL Y PAGOS
+-- ==========================================================
+
+CREATE TABLE IF NOT EXISTS student_semester_status (
+    student_id INTEGER NOT NULL,
+    semester_id INTEGER NOT NULL REFERENCES semesters(id) ON DELETE CASCADE,
+    status VARCHAR(20) DEFAULT 'INSCRITO', -- 'INSCRITO', 'MATRICULADO'
+    needs_payment BOOLEAN DEFAULT false,
+    payment_amount DECIMAL(10, 2) DEFAULT 0.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (student_id, semester_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_semester_status_student ON student_semester_status(student_id);
+CREATE INDEX IF NOT EXISTS idx_semester_status_lookup  ON student_semester_status(student_id, semester_id);

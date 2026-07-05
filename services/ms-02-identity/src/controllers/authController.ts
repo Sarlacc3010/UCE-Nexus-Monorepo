@@ -51,7 +51,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       sub: user.id,
       username: user.username,
       email: user.email,
-      roles: user.roles || ['user']
+      roles: user.roles || ['user'],
+      realm_access: {
+        roles: user.roles || ['user']
+      }
     };
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });

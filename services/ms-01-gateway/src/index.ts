@@ -172,7 +172,7 @@ app.post('/api/refresh', async (req: Request, res: Response): Promise<void> => {
 app.post('/api/reservas', authenticateJWT, requireRole('user'), (req: Request, res: Response) => {
     const decoded = (req as any).user;
     
-    // Extrae el ID de usuario desde el token decodificado de Keycloak (email, username o sub)
+    // Extrae el ID de usuario desde el token decodificado de identidad (email, username o sub)
     const userId = decoded?.email || decoded?.preferred_username || decoded?.sub || "est-12345";
 
     const grpcRequest = {
@@ -237,6 +237,53 @@ app.use('/api/academic', async (req: Request, res: Response): Promise<void> => {
     } catch (error: any) {
         logger.error(`Error proxying to enrollment service (${req.method} ${req.originalUrl}):`, error);
         res.status(503).json({ error: 'El servicio de matrícula/academia no está disponible.' });
+    }
+});
+
+// ─── Payment Write (MS-04) & Payment Read (MS-05) Proxies ──────────────────────
+const PAYMENT_WRITE_URL = process.env.PAYMENT_WRITE_URL || 'http://localhost:4004';
+const PAYMENT_READ_URL = process.env.PAYMENT_READ_URL || 'http://localhost:4005';
+
+app.use('/api/payments', async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Enrutar según la ruta del request
+        // Intentos y confirmación de escritura a ms-04
+        // Historial y estatus a ms-05
+        const isWriteAction = req.path.includes('/intent') || req.path.includes('/confirm');
+        const targetHost = isWriteAction ? PAYMENT_WRITE_URL : PAYMENT_READ_URL;
+        const targetUrl = `${targetHost}${req.originalUrl}`;
+
+        const headers: Record<string, string> = {};
+        if (req.headers.authorization) {
+            headers['Authorization'] = req.headers.authorization;
+        }
+        if (req.headers['content-type']) {
+            headers['Content-Type'] = req.headers['content-type'];
+        }
+
+        const fetchOptions: RequestInit = {
+            method: req.method,
+            headers,
+        };
+
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+            fetchOptions.body = JSON.stringify(req.body);
+        }
+
+        console.log(`🔌 Gateway proxying to: ${targetUrl} [${req.method}]`);
+        const response = await fetch(targetUrl, fetchOptions);
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            res.status(response.status).json(data);
+        } else {
+            const data = await response.text();
+            res.status(response.status).send(data);
+        }
+    } catch (error: any) {
+        logger.error(`Error proxying to payment services (${req.method} ${req.originalUrl}):`, error);
+        res.status(503).json({ error: 'Los servicios de pagos no están disponibles.' });
     }
 });
 

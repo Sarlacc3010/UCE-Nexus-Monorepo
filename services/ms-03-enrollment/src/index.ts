@@ -517,9 +517,128 @@ app.patch('/api/requests/:id/resolve', async (req: Request, res: Response): Prom
   }
 });
 
+// 16. Inscribir y Matricular Estudiante
+// Body: { semester_id, parallels: [id1, id2, ...], repeats_subjects: boolean, is_second_degree: boolean, credits: number }
+app.post('/api/students/:student_id/enroll', async (req: Request, res: Response): Promise<void> => {
+  const studentIdStr = req.params.student_id as string;
+  const student_id = parseInt(studentIdStr, 10);
+  const { semester_id, parallels, repeats_subjects, is_second_degree, credits } = req.body;
+
+  if (isNaN(student_id)) {
+    res.status(400).json({ error: 'student_id debe ser un entero válido.' });
+    return;
+  }
+
+  if (!semester_id || !Array.isArray(parallels) || parallels.length === 0) {
+    res.status(400).json({ error: 'semester_id y parallels (array no vacío) son obligatorios.' });
+    return;
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Determinar arancel e insertar estado de matrícula
+    const needs_payment = repeats_subjects || is_second_degree;
+    const creditCount = parseInt(credits, 10) || 15; // default a 15 si no se especifica
+    // Costo simulado: $10 por crédito si repite/segunda carrera
+    const payment_amount = needs_payment ? creditCount * 10.00 : 0.00;
+    const status = needs_payment ? 'INSCRITO' : 'MATRICULADO';
+
+    // Insertar/actualizar estado de matrícula
+    await client.query(
+      `INSERT INTO student_semester_status (student_id, semester_id, status, needs_payment, payment_amount, updated_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
+       ON CONFLICT (student_id, semester_id) DO UPDATE SET
+         status = EXCLUDED.status,
+         needs_payment = EXCLUDED.needs_payment,
+         payment_amount = EXCLUDED.payment_amount,
+         updated_at = NOW()`,
+      [student_id, semester_id, status, needs_payment, payment_amount]
+    );
+
+    // Limpiar inscripciones anteriores en este semestre (para permitir re-matrícula limpia)
+    await client.query(
+      `DELETE FROM student_enrollments 
+       WHERE student_id = $1 
+         AND parallel_id IN (
+           SELECT p.id FROM parallels p
+           JOIN subjects sub ON p.subject_id = sub.id
+           WHERE sub.semester_id = $2
+         )`,
+      [student_id, semester_id]
+    );
+
+    // Inscribir al estudiante a los nuevos paralelos
+    for (const parallel_id of parallels) {
+      await client.query(
+        `INSERT INTO student_enrollments (student_id, parallel_id)
+         VALUES ($1, $2)
+         ON CONFLICT DO NOTHING`,
+        [student_id, parallel_id]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.status(201).json({
+      message: 'Inscripción procesada correctamente.',
+      student_id,
+      semester_id,
+      status,
+      needs_payment,
+      payment_amount
+    });
+  } catch (error: any) {
+    await client.query('ROLLBACK');
+    console.error('Error during student enrollment:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    client.release();
+  }
+});
+
+// 17. Obtener Estado de Matrícula del Estudiante
+app.get('/api/students/:student_id/semester-status/:semester_id', async (req: Request, res: Response): Promise<void> => {
+  const student_id = parseInt(req.params.student_id as string, 10);
+  const semester_id = parseInt(req.params.semester_id as string, 10);
+
+  if (isNaN(student_id) || isNaN(semester_id)) {
+    res.status(400).json({ error: 'student_id y semester_id deben ser enteros válidos.' });
+    return;
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT * FROM student_semester_status 
+       WHERE student_id = $1 AND semester_id = $2`,
+      [student_id, semester_id]
+    );
+
+    if (result.rows.length === 0) {
+      res.json({
+        student_id,
+        semester_id,
+        status: 'NO_INSCRITO',
+        needs_payment: false,
+        payment_amount: 0.00
+      });
+    } else {
+      res.json(result.rows[0]);
+    }
+  } catch (error: any) {
+    console.error('Error fetching semester status:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+import { startKafkaConsumer } from './kafkaConsumer';
+
 // Iniciar servidor y DB
 app.listen(PORT, async () => {
   console.log(`🚀 ms-03-enrollment corriendo en http://localhost:${PORT}`);
   await initDb();
+  startKafkaConsumer().catch(err => {
+    console.error('❌ Error al arrancar el consumidor de Kafka para Matrículas:', err);
+  });
 });
 

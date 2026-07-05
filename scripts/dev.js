@@ -23,7 +23,8 @@ const turboProcess = spawn('npx', [
   '--filter=web-host',
   '--filter=web-academic',
   '--filter=web-campus',
-  '--filter=web-chatbot'
+  '--filter=web-chatbot',
+  '--filter=web-payments'
 ], { stdio: 'inherit', shell: true });
 
 // Apagado limpio y coordinado de ambos procesos al presionar Ctrl+C

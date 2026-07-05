@@ -55,6 +55,9 @@ jobs:
       enrollment: ${{ steps.filter.outputs.enrollment }}
       ai_agent: ${{ steps.filter.outputs.ai_agent }}
       geocampus: ${{ steps.filter.outputs.geocampus }}
+      payment_write: ${{ steps.filter.outputs.payment_write }}
+      payment_read: ${{ steps.filter.outputs.payment_read }}
+      web_payments: ${{ steps.filter.outputs.web_payments }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -88,6 +91,12 @@ jobs:
               - 'services/ms-08-ai-agent/**'
             geocampus:
               - 'services/ms-09-geocampus/**'
+            payment_write:
+              - 'services/ms-04-payment-write/**'
+            payment_read:
+              - 'services/ms-05-payment-read/**'
+            web_payments:
+              - 'apps/web-payments/**'
 
   # ==========================================
   # 2.5. CI: Pruebas Unitarias
@@ -521,6 +530,49 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ==========================================
+  # 9b. Build & Push: Web Payments
+  # ==========================================
+  build-web-payments:
+    name: Build & Push Web Payments
+    needs: [changes-detector, secrets-scan, run-tests]
+    if: ${{ needs.changes-detector.outputs.web_payments == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set Docker Image Tag
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
+            echo "IMAGE_TAG=qa" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/web-payments
+          file: ./apps/web-payments/dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/web-payments:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/web-payments:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================
   # 10. Build & Push: Enrollment (MS-03)
   # ==========================================
   build-enrollment:
@@ -693,11 +745,97 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ==========================================
+  # 14b. Build & Push: Payment Write (MS-04)
+  # ==========================================
+  build-payment-write:
+    name: Build & Push Payment Write (MS-04)
+    needs: [changes-detector, secrets-scan, run-tests]
+    if: ${{ needs.changes-detector.outputs.payment_write == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set Docker Image Tag
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
+            echo "IMAGE_TAG=qa" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/ms-04-payment-write
+          file: ./services/ms-04-payment-write/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/ms-04-payment-write:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/ms-04-payment-write:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================
+  # 14c. Build & Push: Payment Read (MS-05)
+  # ==========================================
+  build-payment-read:
+    name: Build & Push Payment Read (MS-05)
+    needs: [changes-detector, secrets-scan, run-tests]
+    if: ${{ needs.changes-detector.outputs.payment_read == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set Docker Image Tag
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
+            echo "IMAGE_TAG=qa" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/ms-05-payment-read
+          file: ./services/ms-05-payment-read/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/ms-05-payment-read:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/ms-05-payment-read:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================
   # 15. CD: Despliegue en Servidores (EC2)
   # ==========================================
   deploy:
     name: Deploy to EC2 via Bastion Jump
-    needs: [run-tests, build-gateway, build-identity, build-booking, build-notifications, build-catalog, build-web-host, build-web-academic, build-web-campus, build-web-chatbot, build-enrollment, build-ai-agent, build-geocampus]
+    needs: [run-tests, build-gateway, build-identity, build-booking, build-notifications, build-catalog, build-web-host, build-web-academic, build-web-campus, build-web-chatbot, build-web-payments, build-enrollment, build-ai-agent, build-geocampus, build-payment-write, build-payment-read]
     # Se ejecuta de forma segura después de que todos los builds han finalizado con éxito
     # Solo cuando se hace un push/merge directo en QA o se crea una versión tagged v* (Production)
     if: always() && github.event_name == 'push' && (github.ref_name == 'QA' || startsWith(github.ref_name, 'v')) && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')

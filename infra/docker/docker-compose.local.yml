@@ -18,14 +18,18 @@ services:
       - PORT=3000
       - NODE_ENV=development
       - BOOKING_SERVICE_URL=ms-06-booking:50051
-      - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/UCE-Nexus/protocol/openid-connect/certs
+      - IDENTITY_SERVICE_URL=http://ms-02-identity:4002
       - ENROLLMENT_SERVICE_URL=http://ms-03-enrollment:3001
       - AI_AGENT_URL=http://ms-08-ai-agent:8001
       - GEOCAMPUS_SERVICE_URL=http://ms-09-geocampus:8009
+      - PAYMENT_WRITE_URL=http://ms-04-payment-write:4004
+      - PAYMENT_READ_URL=http://ms-05-payment-read:4005
     depends_on:
-      - keycloak
+      - ms-02-identity
       - ms-06-booking
       - ms-03-enrollment
+      - ms-04-payment-write
+      - ms-05-payment-read
     networks:
       - nexus-network
 
@@ -90,8 +94,10 @@ services:
       - PORT=3001
       - NODE_ENV=development
       - DATABASE_URL=postgres://enrollment_user:enrollment_password@postgres-enrollment:5432/uce_enrollment_dev
+      - KAFKA_BROKERS=kafka:29092
     depends_on:
       - postgres-enrollment
+      - kafka
     networks:
       - nexus-network
 
@@ -130,14 +136,14 @@ services:
       - REDIS_URL=redis://redis-cache:6379
       - GATEWAY_URL=http://ms-01-gateway:3000
       - CATALOG_GRPC_URL=ms-11-catalog:50052
-      - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/UCE-Nexus/protocol/openid-connect/certs
+      - IDENTITY_SERVICE_URL=http://ms-02-identity:4002
       - DATABASE_URL=postgresql://uce:password@postgres-app:5432/uce_nexus_dev
     env_file:
       - ../../services/ms-08-ai-agent/.env
     depends_on:
       - redis-cache
       - postgres-app
-      - keycloak
+      - ms-02-identity
     networks:
       - nexus-network
 
@@ -183,20 +189,20 @@ services:
         limits:
           memory: 256M
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:24.0
-    container_name: nexus-keycloak
-    command: start-dev
+  ms-02-identity:
+    build:
+      context: ../../services/ms-02-identity
+      dockerfile: Dockerfile
+    image: docker-ms-02-identity:latest
+    container_name: nexus-ms-02-identity
     restart: unless-stopped
-    environment:
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres-iam:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: password
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
     ports:
-      - "8080:8080"
+      - "4002:4002"
+    environment:
+      - PORT=4002
+      - NODE_ENV=development
+      - DATABASE_URL=postgres://keycloak:password@postgres-iam:5432/keycloak
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - postgres-iam
     networks:
@@ -343,6 +349,50 @@ services:
       - "1883:1883"
       - "9001:9001"
     command: "mosquitto -c /mosquitto-no-auth.conf"
+    networks:
+      - nexus-network
+  # MS-04: Payment Event Engine (Write Service)
+  ms-04-payment-write:
+    build:
+      context: ../../services/ms-04-payment-write
+      dockerfile: dockerfile
+    image: docker-ms-04-payment-write:latest
+    container_name: nexus-ms-04-payment-write
+    restart: unless-stopped
+    ports:
+      - "4004:4004"
+    environment:
+      - PORT=4004
+      - NODE_ENV=development
+      - DATABASE_URL=postgres://uce:password@postgres-app:5432/uce_nexus_dev
+      - KAFKA_BROKERS=kafka:29092
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+    depends_on:
+      - postgres-app
+      - kafka
+    networks:
+      - nexus-network
+
+  # MS-05: Payment Cache Query Engine (Read Service)
+  ms-05-payment-read:
+    build:
+      context: ../../services/ms-05-payment-read
+      dockerfile: dockerfile
+    image: docker-ms-05-payment-read:latest
+    container_name: nexus-ms-05-payment-read
+    restart: unless-stopped
+    ports:
+      - "4005:4005"
+    environment:
+      - PORT=4005
+      - NODE_ENV=development
+      - DATABASE_URL=postgres://uce:password@postgres-app:5432/uce_nexus_dev
+      - KAFKA_BROKERS=kafka:29092
+      - REDIS_URL=redis://redis-cache:6379
+    depends_on:
+      - postgres-app
+      - kafka
+      - redis-cache
     networks:
       - nexus-network
 

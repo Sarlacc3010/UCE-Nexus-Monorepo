@@ -1,8 +1,8 @@
 {
-  "name": "ms-03-enrollment",
+  "name": "ms-05-payment-read",
   "version": "1.0.0",
-  "description": "UCE-Nexus Academic Structure and Enrollment Microservice",
-  "main": "index.js",
+  "description": "UCE-Nexus Payment Read Service (CQRS Query)",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn src/index.ts",
     "build": "tsc"
@@ -12,8 +12,10 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "helmet": "^8.0.0",
     "kafkajs": "^2.2.4",
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "redis": "^4.6.13"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
