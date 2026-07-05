@@ -1,5 +1,5 @@
 """
-JWT Authentication Middleware — Validates Keycloak tokens and extracts user role.
+JWT Authentication Middleware — Validates local tokens and extracts user role.
 
 Roles:
   - "public"  → No token provided (or invalid)
@@ -8,32 +8,13 @@ Roles:
 """
 import os
 import logging
-import httpx
-from functools import lru_cache
-
 from fastapi import Request
 import jwt
-from jwt import PyJWK, PyJWTError
+from jwt import PyJWTError
 
 logger = logging.getLogger("auth")
 
-KEYCLOAK_JWKS_URI = os.getenv(
-    "KEYCLOAK_JWKS_URI",
-    "http://localhost:8080/realms/UCE-Nexus/protocol/openid-connect/certs"
-)
-
-
-@lru_cache(maxsize=1)
-def _get_cached_jwks() -> dict:
-    """Fetch JWKS from Keycloak (cached for the process lifetime)."""
-    import requests
-    try:
-        response = requests.get(KEYCLOAK_JWKS_URI, timeout=5)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        logger.warning(f"Could not fetch JWKS from Keycloak: {e}")
-        return {"keys": []}
+JWT_SECRET = os.getenv("JWT_SECRET", "supersecrettokenkey123!")
 
 
 class AuthContext:
@@ -53,7 +34,7 @@ class AuthContext:
 
 def extract_auth_context(authorization: str | None) -> AuthContext:
     """
-    Validates the Bearer token from the Authorization header.
+    Validates the Bearer token from the Authorization header using JWT_SECRET.
     Returns an AuthContext with the appropriate role.
     """
     if not authorization or not authorization.startswith("Bearer "):
@@ -62,48 +43,22 @@ def extract_auth_context(authorization: str | None) -> AuthContext:
     token = authorization.split(" ", 1)[1]
 
     try:
-        # Decode header to get kid
-        header = jwt.get_unverified_header(token)
-        kid = header.get("kid")
-
-        # Find matching key in JWKS
-        jwks = _get_cached_jwks()
-        matching_key = next(
-            (k for k in jwks.get("keys", []) if k.get("kid") == kid),
-            None
-        )
-
-        if not matching_key:
-            # JWKS might be stale — clear cache and retry once
-            _get_cached_jwks.cache_clear()
-            jwks = _get_cached_jwks()
-            matching_key = next(
-                (k for k in jwks.get("keys", []) if k.get("kid") == kid),
-                None
-            )
-
-        if not matching_key:
-            logger.warning("No matching JWK found for token kid")
-            return AuthContext(role="public", user_id="", username="", token="")
-
-        # Verify and decode
-        jwk_obj = PyJWK(matching_key)
-        public_key = jwk_obj.key
+        # Verify and decode local HS256 JWT
         payload = jwt.decode(
             token,
-            public_key,
-            algorithms=["RS256"],
-            options={"verify_aud": False},  # Keycloak may not set aud
+            JWT_SECRET,
+            algorithms=["HS256"],
+            options={"verify_aud": False},
         )
 
         user_id = payload.get("sub", "")
-        username = payload.get("preferred_username", payload.get("email", ""))
-        realm_roles = payload.get("realm_access", {}).get("roles", [])
+        username = payload.get("username", payload.get("email", ""))
+        user_roles = payload.get("roles", [])
 
         # Determine role (admin > user > public)
-        if "admin" in realm_roles:
+        if "admin" in user_roles:
             role = "admin"
-        elif "user" in realm_roles:
+        elif "user" in user_roles:
             role = "user"
         else:
             role = "public"  # Valid token but no recognized role
