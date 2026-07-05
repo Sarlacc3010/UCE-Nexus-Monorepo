@@ -697,7 +697,7 @@ jobs:
   # ==========================================
   deploy:
     name: Deploy to EC2 via Bastion Jump
-    needs: [run-tests, build-gateway, build-identity, build-booking, build-notifications, build-catalog, build-webhost, build-webacademic, build-webcampus, build-webchatbot, build-enrollment, build-aiagent, build-geocampus]
+    needs: [run-tests, build-gateway, build-identity, build-booking, build-notifications, build-catalog, build-web-host, build-web-academic, build-web-campus, build-web-chatbot, build-enrollment, build-ai-agent, build-geocampus]
     # Se ejecuta de forma segura después de que todos los builds han finalizado con éxito
     # Solo cuando se hace un push/merge directo en QA o se crea una versión tagged v* (Production)
     if: always() && github.event_name == 'push' && (github.ref_name == 'QA' || startsWith(github.ref_name, 'v')) && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
