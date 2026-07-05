@@ -11,6 +11,7 @@ import {
   LogOut
 } from 'lucide-react';
 import CampusMap from './components/CampusMap';
+import EnrollmentModule from './components/EnrollmentModule';
 
 const ChatWidget = lazy(() => import('chatbot/ChatWidget'));
 import ErrorBoundary from './ErrorBoundary';
@@ -81,6 +82,8 @@ export default function CampusApp({ activeTab: propActiveTab, token: propToken }
         return <App />;
       case 'maps':
         return <CampusMap />;
+      case 'matriculacion':
+        return <EnrollmentModule activeTab="matriculacion" token={token} />;
       default:
         return (
           <div className="coming-soon-container" style={{

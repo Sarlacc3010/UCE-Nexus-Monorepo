@@ -12,6 +12,7 @@ export default defineConfig({
         academic: '/academic-mf/assets/remoteEntry.js',
         gateway: '/campus-mf/assets/remoteEntry.js',
         chatbot: '/chatbot-mf/assets/remoteEntry.js',
+        payments: '/payments-mf/assets/remoteEntry.js',
       },
       shared: {
         react: { singleton: true, requiredVersion: '^19.2.6' },
@@ -50,6 +51,10 @@ export default defineConfig({
       },
       '/chatbot-mf': {
         target: 'http://localhost:5003',
+        changeOrigin: true
+      },
+      '/payments-mf': {
+        target: 'http://localhost:5004',
         changeOrigin: true
       }
     }

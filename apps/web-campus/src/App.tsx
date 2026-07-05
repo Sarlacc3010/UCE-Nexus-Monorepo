@@ -98,7 +98,7 @@ function App() {
   // Listado del Monorepo con el estado de los servicios configurados
   const monorepoServices = [
     { name: 'ms-01-gateway', desc: 'API Edge Gateway (Node/TS)', status: gatewayStatus === 'ONLINE' ? 'ACTIVO' : 'INACTIVO', color: gatewayStatus === 'ONLINE' ? '#10b981' : '#ef4444' },
-    { name: 'ms-02-identity', desc: 'IAM Service (Keycloak)', status: 'PREPARADO', color: '#3b82f6' },
+    { name: 'ms-02-identity', desc: 'IAM Service (Custom Auth)', status: 'PREPARADO', color: '#3b82f6' },
     { name: 'ms-03-enrollment', desc: 'Matrículas & Estudiantes', status: 'ESQUELETO', color: '#64748b' },
     { name: 'ms-04-payment-write', desc: 'Eventos de Pago (Escritura)', status: 'ESQUELETO', color: '#64748b' },
     { name: 'ms-05-payment-read', desc: 'Consulta de Pagos (Lectura)', status: 'ESQUELETO', color: '#64748b' },
@@ -196,7 +196,7 @@ function App() {
           Inspector de Identidad (Token de Sesión Activa)
         </h3>
         <p className="token-decoder-subtitle">
-          Este panel inspecciona los claims de seguridad del token de tu sesión de Keycloak activa en el portal, sin exponer el texto del token directamente.
+          Este panel inspecciona los claims de seguridad del token de tu sesión de identidad activa en el portal, sin exponer el texto del token directamente.
         </p>
 
         {decodeError && (
@@ -216,7 +216,7 @@ function App() {
               </div>
               {/* ID de Sujeto */}
               <div className="token-badge-card">
-                <span className="badge-card-lbl">Keycloak Subject ID (sub)</span>
+                <span className="badge-card-lbl">Identity Subject ID (sub)</span>
                 <span className="badge-card-val mono">{decodedToken.sub || 'No disponible'}</span>
               </div>
               {/* Estado de Expiración */}
@@ -230,12 +230,12 @@ function App() {
 
             {/* Detalles Roles y JSON Completo */}
             <div className="token-details-grid">
-              {/* Roles de Keycloak */}
+              {/* Roles de Identidad */}
               <div className="roles-section">
-                <span className="roles-section-lbl">Roles asignados en Keycloak:</span>
+                <span className="roles-section-lbl">Roles asignados:</span>
                 <div className="roles-flex">
-                  {decodedToken.realm_access?.roles ? (
-                    decodedToken.realm_access.roles.map((role: string) => (
+                  {(decodedToken.roles || decodedToken.realm_access?.roles) ? (
+                    (decodedToken.roles || decodedToken.realm_access?.roles).map((role: string) => (
                       <span key={role} className="role-chip">
                         {role}
                       </span>

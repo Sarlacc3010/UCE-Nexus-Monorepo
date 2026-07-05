@@ -44,7 +44,7 @@ function App() {
   const [conflict, setConflict] = useState<any>(null);
   const [isCheckingConflict, setIsCheckingConflict] = useState(false);
 
-  // Leer el token automáticamente de la sesión de Keycloak
+  // Leer el token automáticamente de la sesión de identidad
   useEffect(() => {
     const activeToken = localStorage.getItem('uce_token') || '';
     setToken(activeToken);
@@ -280,7 +280,7 @@ function App() {
 
             {token && (
               <div className="booking-session-status active" id="session-status-alert">
-                <span>🔑</span> Sesión de Keycloak activa y vinculada de manera segura.
+                <span>🔑</span> Sesión de identidad activa y vinculada de manera segura.
               </div>
             )}
 
