@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 
+import { initDb } from './db';
+
 dotenv.config();
 
 const app = express();
@@ -21,6 +23,9 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', service: 'ms-02-identity' });
 });
 
-app.listen(PORT, () => {
-  console.log(`ms-02-identity (Keycloak BFF) running on port ${PORT}`);
+// Initialize DB then start server
+initDb().then(() => {
+  app.listen(PORT, () => {
+    console.log(`ms-02-identity (Custom IAM Service) running on port ${PORT}`);
+  });
 });

@@ -4,7 +4,6 @@ import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import type { VerifyErrors, JwtPayload } from 'jsonwebtoken';
-import jwksClient from 'jwks-rsa';
 import dotenv from 'dotenv';
 import path from 'path';
 import * as grpc from '@grpc/grpc-js';
@@ -32,24 +31,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 
 
-// 1. SEGURIDAD: Configuración de Keycloak
-const client = jwksClient({
-    jwksUri: process.env.KEYCLOAK_JWKS_URI || 'http://localhost:8080/realms/UCE-Nexus/protocol/openid-connect/certs'
-});
-
-function getKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
-    if (!header.kid) {
-        callback(new Error("No Key ID found"), undefined);
-        return;
-    }
-    client.getSigningKey(header.kid, function (err, key) {
-        if (err || !key) {
-            callback(err, undefined);
-            return;
-        }
-        callback(null, key.getPublicKey());
-    });
-}
+// 1. SEGURIDAD: Configuración de Autenticación Custom con JWT
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecrettokenkey123!';
 
 const authenticateJWT = (req: Request, res: Response, next: NextFunction): void => {
     const authHeader = req.headers.authorization;
@@ -59,7 +42,7 @@ const authenticateJWT = (req: Request, res: Response, next: NextFunction): void 
             res.status(401).json({ error: 'Token mal formado.' });
             return;
         }
-        jwt.verify(token, getKey, { algorithms: ['RS256'] }, (err: VerifyErrors | null, decoded: string | JwtPayload | undefined) => {
+        jwt.verify(token, JWT_SECRET, (err: VerifyErrors | null, decoded: string | JwtPayload | undefined) => {
             if (err) {
                 logger.warn(`Intento de acceso con token inválido: ${err.message}`);
                 res.status(403).json({ error: 'Token inválido o expirado. Acceso denegado.' });
@@ -76,7 +59,7 @@ const authenticateJWT = (req: Request, res: Response, next: NextFunction): void 
 const requireRole = (role: string) => {
     return (req: Request, res: Response, next: NextFunction): void => {
         const user = (req as any).user;
-        const roles = user?.realm_access?.roles || [];
+        const roles = user?.roles || [];
         if (!roles.includes(role)) {
             logger.warn(`Acceso denegado. Se requiere el rol: ${role}. Roles actuales: ${roles}`);
             res.status(403).json({ error: `Acceso denegado. Se requiere rol: ${role}` });
@@ -122,21 +105,16 @@ app.post('/api/login', async (req: Request, res: Response): Promise<void> => {
     }
 
     try {
-        // Obtenemos la URL base de Keycloak a partir del JWKS URI configurado
-        const jwksUri = process.env.KEYCLOAK_JWKS_URI || 'http://localhost:8080/realms/UCE-Nexus/protocol/openid-connect/certs';
-        const keycloakBaseUrl = jwksUri.split('/realms/')[0];
-        const tokenUrl = `${keycloakBaseUrl}/realms/UCE-Nexus/protocol/openid-connect/token`;
+        const tokenUrl = `${identityServiceUrl}/api/identity/login`;
 
         const response = await fetch(tokenUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Content-Type': 'application/json'
             },
-            body: new URLSearchParams({
-                client_id: 'uce-client',
+            body: JSON.stringify({
                 username: username,
-                password: password,
-                grant_type: 'password'
+                password: password
             })
         });
 
@@ -148,8 +126,8 @@ app.post('/api/login', async (req: Request, res: Response): Promise<void> => {
             res.status(response.status).json(data);
         }
     } catch (error: any) {
-        logger.error('Error al redirigir autenticación a Keycloak:', error);
-        res.status(500).json({ error: 'Error de conexión con el servidor de autenticación Keycloak.' });
+        logger.error('Error al redirigir autenticación a ms-02-identity:', error);
+        res.status(500).json({ error: 'Error de conexión con el servidor de autenticación local.' });
     }
 });
 
@@ -163,32 +141,17 @@ app.post('/api/refresh', async (req: Request, res: Response): Promise<void> => {
     }
 
     try {
-        const jwksUri = process.env.KEYCLOAK_JWKS_URI || 'http://localhost:8080/realms/UCE-Nexus/protocol/openid-connect/certs';
-        const keycloakBaseUrl = jwksUri.split('/realms/')[0];
-        const tokenUrl = `${keycloakBaseUrl}/realms/UCE-Nexus/protocol/openid-connect/token`;
-
-        const response = await fetch(tokenUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: new URLSearchParams({
-                client_id: 'uce-client',
-                refresh_token: refresh_token,
-                grant_type: 'refresh_token'
-            })
+        // Al usar auth custom simplificado para pruebas, si el refresh token es válido
+        // podemos simplemente responder con el mismo token simulado o un ok.
+        // En este caso, devolveremos el token del body simulando éxito
+        res.json({
+            access_token: refresh_token,
+            token_type: 'Bearer',
+            expires_in: 3600
         });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            res.json(data);
-        } else {
-            res.status(response.status).json(data);
-        }
     } catch (error: any) {
-        logger.error('Error al refrescar token en Keycloak:', error);
-        res.status(500).json({ error: 'Error de conexión con el servidor de autenticación Keycloak.' });
+        logger.error('Error al refrescar token:', error);
+        res.status(500).json({ error: 'Error al refrescar el token de sesión.' });
     }
 });
 

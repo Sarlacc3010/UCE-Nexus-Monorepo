@@ -9,38 +9,18 @@ services:
     container_name: nexus-db-iam
     restart: unless-stopped
     environment:
-      POSTGRES_USER: keycloak
+      POSTGRES_USER: iam_user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: keycloak
+      POSTGRES_DB: uce_nexus_iam
     volumes:
       - pg-iam-data:/var/lib/postgresql/data
     ports:
       - "5431:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      test: ["CMD-SHELL", "pg_isready -U iam_user -d uce_nexus_iam"]
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - nexus-db-network
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:24.0
-    container_name: nexus-keycloak
-    command: start-dev
-    restart: unless-stopped
-    environment:
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres-iam:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: password
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres-iam:
-        condition: service_healthy
     networks:
       - nexus-db-network
 
