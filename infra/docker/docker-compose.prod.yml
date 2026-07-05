@@ -55,7 +55,7 @@ services:
       - PORT=3000
       - NODE_ENV=production
       - BOOKING_SERVICE_URL=ms-06-booking:50051
-      - KEYCLOAK_JWKS_URI=http://${DB_PRIVATE_IP:-localhost}:8080/realms/UCE-Nexus/protocol/openid-connect/certs
+      - JWT_SECRET=${JWT_SECRET:-supersecrettokenkey123!}
       - ENROLLMENT_SERVICE_URL=http://ms-03-enrollment:3001
       - IDENTITY_SERVICE_URL=http://ms-02-identity:4002
 #      - AI_AGENT_URL=http://ms-08-ai-agent:8001
@@ -67,7 +67,7 @@ services:
     networks:
       - nexus-network
 
-  # MS-02: Identity Service (BFF)
+  # MS-02: Identity Service (Auth)
   ms-02-identity:
     image: ${DOCKER_HUB_USER:-abel3010}/ms-02-identity:${IMAGE_TAG:-latest}
     container_name: nexus-ms-02-identity
@@ -76,10 +76,8 @@ services:
       - "4002:4002"
     environment:
       - PORT=4002
-      - KEYCLOAK_BASE_URL=http://${DB_PRIVATE_IP:-localhost}:8080
-      - KEYCLOAK_REALM=master
-      - KEYCLOAK_ADMIN_USERNAME=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - DATABASE_URL=postgres://iam_user:password@${DB_PRIVATE_IP:-localhost}:5431/uce_nexus_iam
+      - JWT_SECRET=${JWT_SECRET:-supersecrettokenkey123!}
     networks:
       - nexus-network
 
