@@ -76,7 +76,7 @@ services:
       - "4002:4002"
     environment:
       - PORT=4002
-      - DATABASE_URL=postgres://iam_user:password@${DB_PRIVATE_IP:-localhost}:5431/uce_nexus_iam
+      - DATABASE_URL=postgres://keycloak:password@${DB_PRIVATE_IP:-localhost}:5431/keycloak
       - JWT_SECRET=${JWT_SECRET:-supersecrettokenkey123!}
     networks:
       - nexus-network

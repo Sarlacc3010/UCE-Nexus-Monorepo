@@ -2,7 +2,7 @@ import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
-const databaseUrl = process.env.DATABASE_URL || 'postgres://iam_user:password@localhost:5431/uce_nexus_iam';
+const databaseUrl = process.env.DATABASE_URL || 'postgres://keycloak:password@localhost:5431/keycloak';
 
 export const pool = new Pool({
   connectionString: databaseUrl,
