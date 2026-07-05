@@ -3,11 +3,9 @@ import {
   BookOpen, 
   CheckCircle, 
   AlertCircle, 
-  HelpCircle, 
   CreditCard, 
   ArrowRight,
-  ShieldCheck,
-  ClipboardList
+  ShieldCheck
 } from 'lucide-react';
 
 interface Parallel {
@@ -81,7 +79,7 @@ export default function EnrollmentModule({ token }: EnrollmentModuleProps) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const headers: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
 
         // Cargar Semestres
         const semRes = await fetch(`${API_URL}/api/academic/semesters`, { headers });
@@ -116,7 +114,7 @@ export default function EnrollmentModule({ token }: EnrollmentModuleProps) {
     const checkStatus = async () => {
       if (!studentId || !selectedSemester) return;
       try {
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const headers: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
         const res = await fetch(`${API_URL}/api/academic/students/${studentId}/semester-status/${selectedSemester}`, { headers });
         if (res.ok) {
           const data = await res.json();

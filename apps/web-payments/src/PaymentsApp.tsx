@@ -68,6 +68,7 @@ export default function PaymentsApp({ activeTab: initialTab, token }: PaymentsAp
   };
 
   const studentId = getStudentId();
+  const PARKING_ANNUAL_FEE = 45.00;
 
   // Estados de Matrícula (Aranceles)
   const [tuitionFee, setTuitionFee] = useState<number>(0.00);
@@ -102,7 +103,7 @@ export default function PaymentsApp({ activeTab: initialTab, token }: PaymentsAp
   // 1. Cargar cobros de matrícula pendientes
   const fetchTuitionStatus = async () => {
     try {
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const headers: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
       const res = await fetch(`${API_URL}/api/academic/students/${studentId}/semester-status/3`, { headers });
       if (res.ok) {
         const data = await res.json();
@@ -122,7 +123,7 @@ export default function PaymentsApp({ activeTab: initialTab, token }: PaymentsAp
   // 2. Cargar historial y pase de estacionamiento
   const fetchHistoryAndParking = async () => {
     try {
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const headers: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
       const res = await fetch(`${API_URL}/api/payments/student/${studentId}`, { headers });
       if (res.ok) {
         const data = await res.json();
@@ -677,7 +678,7 @@ export default function PaymentsApp({ activeTab: initialTab, token }: PaymentsAp
                   ) : (
                     /* Formulario de Stripe de Estacionamiento */
                     <div style={{ marginTop: '20px', borderTop: '1px solid #edf2f7', paddingTop: '20px' }}>
-                      {renderStripeForm(parkingFee, 'ESTACIONAMIENTO', `Pase de Estacionamiento Anual - Conductor: ${driverName}`)}
+                      {renderStripeForm(PARKING_ANNUAL_FEE, 'ESTACIONAMIENTO', `Pase de Estacionamiento Anual - Conductor: ${driverName}`)}
                     </div>
                   )}
                 </div>

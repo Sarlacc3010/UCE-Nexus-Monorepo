@@ -35,3 +35,9 @@ declare module 'chatbot/ChatWidget' {
   const ChatWidget: ComponentType<{ gatewayUrl?: string }>;
   export default ChatWidget;
 }
+
+declare module 'payments/PaymentsApp' {
+  import { ComponentType } from 'react';
+  const PaymentsApp: ComponentType<{ activeTab?: string; token?: string }>;
+  export default PaymentsApp;
+}

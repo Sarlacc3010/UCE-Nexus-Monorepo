@@ -1,9 +1,11 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "target": "es2023",
+    "lib": ["DOM", "DOM.Iterable", "ES2023"],
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "types": ["vite/client"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "jsx": "react-jsx",

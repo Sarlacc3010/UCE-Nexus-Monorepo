@@ -6,8 +6,6 @@ import {
   CheckCircle, 
   AlertCircle, 
   Download,
-  Calendar,
-  DollarSign,
   Send,
   Loader2
 } from 'lucide-react';
@@ -78,7 +76,7 @@ export default function PaymentsModule({ activeTab: initialTab, token }: Payment
   useEffect(() => {
     const fetchTuitionStatus = async () => {
       try {
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const headers: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
         const res = await fetch(`${API_URL}/api/academic/students/${studentId}/semester-status/3`, { headers }); // Semestre 3 de ejemplo
         if (res.ok) {
           const data = await res.json();
@@ -101,7 +99,7 @@ export default function PaymentsModule({ activeTab: initialTab, token }: Payment
   // 2. Cargar historial de pagos del estudiante
   const fetchHistory = async () => {
     try {
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const headers: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
       const res = await fetch(`${API_URL}/api/payments/student/${studentId}`, { headers });
       if (res.ok) {
         const data = await res.json();

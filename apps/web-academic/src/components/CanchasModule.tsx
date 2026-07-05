@@ -2,16 +2,10 @@ import { useState } from 'react';
 import { 
   Activity, 
   MapPin, 
-  Clock, 
-  DollarSign, 
   CheckCircle, 
-  AlertCircle, 
   CreditCard,
   Send,
-  Loader2,
-  Calendar,
-  User,
-  Info
+  Loader2
 } from 'lucide-react';
 
 interface Cancha {
@@ -223,7 +217,7 @@ export default function CanchasModule({ token }: CanchasModuleProps) {
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <button
-              onClick={() => setSelectedCancha(null) || setSuccessReceipt(null)}
+              onClick={() => { setSelectedCancha(null); setSuccessReceipt(null); }}
               style={{
                 backgroundColor: '#0d3b8e',
                 color: 'white',
@@ -435,7 +429,7 @@ export default function CanchasModule({ token }: CanchasModuleProps) {
   );
 
   // Renderizador de Stripe
-  function renderStripeForm(amount: number, category: string, description: string) {
+  function renderStripeForm(amount: number, _category: string, _description: string) {
     return (
       <div>
         <div style={{
