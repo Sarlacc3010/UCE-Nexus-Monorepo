@@ -418,7 +418,7 @@ function App() {
                   Inicio
                 </button>
 
-                {userInfo.role === 'Administrador' ? (
+                {userInfo.role === 'Administrador' && (
                   /* SIDEBAR PARA ADMINISTRADOR (DESPLEGABLE) */
                   <div className="nexus-nav-group">
                     <button className="nexus-nav-group-header" onClick={() => toggleGroup('administracion')}>
@@ -456,9 +456,10 @@ function App() {
                       </button>
                     </div>
                   </div>
-                ) : (
-                  /* SIDEBAR PARA ESTUDIANTE (DESPLEGABLE) */
-                  <>
+                )}
+
+                {/* SIDEBAR PARA ESTUDIANTE (DESPLEGABLE) */}
+                <>
                     {/* Grupo Académicos */}
                     <div className="nexus-nav-group">
                       <button className="nexus-nav-group-header" onClick={() => toggleGroup('academicos')}>
@@ -627,7 +628,6 @@ function App() {
                       </div>
                     </div>
                   </>
-                )}
               </nav>
             </aside>
 
