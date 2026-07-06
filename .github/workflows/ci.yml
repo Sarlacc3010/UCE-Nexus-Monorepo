@@ -1004,12 +1004,16 @@ jobs:
           # Autenticar Docker en App Server
           ssh app-server "echo '${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}' | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin"
           
+          # Ensure the external Docker network exists before compose up
+          ssh app-server "docker network inspect app_nexus-network >/dev/null 2>&1 || docker network create -d bridge app_nexus-network >/dev/null 2>&1 || true"
+          
           # Bajar TODOS los contenedores primero para evitar KeyError: ContainerConfig en docker-compose v1
           # (bug conocido al hacer force-recreate con imagenes BuildKit modernas)
           ssh app-server "cd /home/ubuntu/app && docker-compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true"
           
           # Descargar y levantar microservicios
           ssh app-server "
+            docker network create app_nexus-network 2>/dev/null || true && \
             cd /home/ubuntu/app && \
             DOCKER_HUB_USER=${{ secrets.DOCKER_HUB_USERNAME }} IMAGE_TAG=qa DB_PRIVATE_IP=${{ env.DB_PRIVATE_IP }} docker-compose -f docker-compose.prod.yml pull && \
             DOCKER_HUB_USER=${{ secrets.DOCKER_HUB_USERNAME }} IMAGE_TAG=qa DB_PRIVATE_IP=${{ env.DB_PRIVATE_IP }} docker-compose -f docker-compose.prod.yml up -d --remove-orphans

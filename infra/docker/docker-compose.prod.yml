@@ -232,4 +232,5 @@ services:
 
 networks:
   nexus-network:
-    driver: bridge
+    name: app_nexus-network
+    external: true
