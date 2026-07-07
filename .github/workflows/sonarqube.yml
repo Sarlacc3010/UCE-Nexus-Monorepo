@@ -1,0 +1,52 @@
+name: SonarQube Analysis - UCE Nexus Monorepo
+
+on:
+  push:
+    branches:
+      - Dev
+  pull_request:
+    branches:
+      - Dev
+
+jobs:
+  sonarqube:
+    name: SonarQube Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage (Turborepo)
+        run: npm run test -- --coverage
+        continue-on-error: true  # evita que un workspace sin tests tumbe todo el análisis
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: sqp_1d8b564fc3a6674e65b01013c2081c85dcb26bb6
+          SONAR_HOST_URL: http://98.90.146.42:9000
+        with:
+          args: >
+            -Dsonar.projectKey=g9-UCE-Nexus
+            -Dsonar.projectName=g9-UCE-Nexus
+            -Dsonar.sources=apps,services,packages
+            -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/dist/**,**/build/**,**/*.test.ts,**/*.test.tsx,**/*.test.js
+            -Dsonar.javascript.lcov.reportPaths=**/coverage/lcov.info
+            -Dsonar.typescript.lcov.reportPaths=**/coverage/lcov.info
+
+      - name: SonarQube Quality Gate Check
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: sqp_1d8b564fc3a6674e65b01013c2081c85dcb26bb6
