@@ -1,0 +1,577 @@
+{
+  "info": {
+    "name": "UCE-Nexus QA API Completa (URLs Directas)",
+    "description": "Colección completa de Postman con todos los endpoints de QA usando URLs directas (sin variables).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Autenticación y Utilidad (Públicos)",
+      "item": [
+        {
+          "name": "Health Check (API Gateway)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/health",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Academic Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/academic/health",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "academic",
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login (Obtener Token JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.collectionVariables.set(\"token\", jsonData.access_token);",
+                  "    if (jsonData.refresh_token) {",
+                  "        pm.collectionVariables.set(\"refresh_token\", jsonData.refresh_token);",
+                  "    }",
+                  "    console.log(\"Token guardado exitosamente\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"aenavarreteg1\",\n    \"password\": \"abel3010\"\n}"
+            },
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/login",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.collectionVariables.set(\"token\", jsonData.access_token);",
+                  "    if (jsonData.refresh_token) {",
+                  "        pm.collectionVariables.set(\"refresh_token\", jsonData.refresh_token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/refresh",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "refresh"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. GeoCampus (Mapa)",
+      "item": [
+        {
+          "name": "Obtener Facultades / Nodos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/geocampus/faculties",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "geocampus",
+                "faculties"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Heatmap (Métricas de Calor)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/geocampus/heatmap",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "geocampus",
+                "heatmap"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Calcular Ruta Óptima",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/geocampus/route?start=FING&end=FCE",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "geocampus",
+                "route"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "FING"
+                },
+                {
+                  "key": "end",
+                  "value": "FCE"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Chatbot IA",
+      "item": [
+        {
+          "name": "Chat Básico (Público)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"message\": \"¿Cuáles son los horarios de la universidad?\",\n    \"history\": [],\n    \"conversation_id\": \"test-public-123\"\n}"
+            },
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/chat",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "chat"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Chat Privado (Seguro)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"message\": \"Necesito reservar un laboratorio de computación hoy a las 10:00 AM.\",\n    \"history\": [],\n    \"conversation_id\": \"test-secure-123\"\n}"
+            },
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/chat/secure",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "secure"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Reservas",
+      "item": [
+        {
+          "name": "Crear Reserva de Laboratorio",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"resource_type\": \"Laboratorio\",\n    \"resource_id\": \"LAB-Cisco-01\",\n    \"date\": \"2026-06-30T10:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/reservas",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "reservas"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Pagos y Matrículas",
+      "item": [
+        {
+          "name": "Crear Intento de Pago (Stripe Intent)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"amount\": 25.50,\n    \"currency\": \"usd\",\n    \"description\": \"Pago de matrícula arancel ordinario\",\n    \"student_id\": \"3941627b-481a-4f2a-8d57-980b9f2d5a22\",\n    \"concept\": \"arancel\"\n}"
+            },
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/payments/intent",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "intent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Confirmar Pago (Stripe Confirm)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"payment_intent_id\": \"pi_mock_1234567890\",\n    \"student_id\": \"3941627b-481a-4f2a-8d57-980b9f2d5a22\",\n    \"concept\": \"arancel\"\n}"
+            },
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/payments/confirm",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "confirm"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Historial de Pagos Estudiante",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/payments/student/3941627b-481a-4f2a-8d57-980b9f2d5a22",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "student",
+                "3941627b-481a-4f2a-8d57-980b9f2d5a22"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Matricular Estudiante",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"semester_id\": \"2026-B\",\n    \"career\": \"Ingeniería en Computación\",\n    \"has_carryover\": true\n}"
+            },
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/students/3941627b-481a-4f2a-8d57-980b9f2d5a22/enroll",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "students",
+                "3941627b-481a-4f2a-8d57-980b9f2d5a22",
+                "enroll"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Estado de Matrícula",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/students/3941627b-481a-4f2a-8d57-980b9f2d5a22/semester-status/2026-B",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "students",
+                "3941627b-481a-4f2a-8d57-980b9f2d5a22",
+                "semester-status",
+                "2026-B"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
