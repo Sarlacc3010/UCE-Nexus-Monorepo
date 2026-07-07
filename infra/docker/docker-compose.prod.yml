@@ -70,6 +70,7 @@ services:
       - GEOCAMPUS_SERVICE_URL=http://ms-09-geocampus:8009
       - PAYMENT_WRITE_URL=http://ms-04-payment-write:4004
       - PAYMENT_READ_URL=http://ms-05-payment-read:4005
+      - IDENTITY_SERVICE_URL=http://ms-02-identity:4002
     depends_on:
       - ms-06-booking
       - ms-03-enrollment
