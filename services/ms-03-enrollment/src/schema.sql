@@ -91,7 +91,7 @@ INSERT INTO subjects (id, code, name, description, semester_id) VALUES
 (3, 'TIP01BFT03', 'PROGRAMACION I', 'Nivel 1', 1),
 (4, 'TIP01BFT04', 'FUNDAMENTOS DE SISTEMAS DE INFORMACION', 'Nivel 1', 1),
 (5, 'TIP01BFT06', 'FISICA APLICADA', 'Nivel 1', 1),
-(6, 'TIP01BCL05', 'COMUNICACION Y LENGUAJE', 'Nivel 1', 1),
+(6, 'TIP01BCL05', 'COMUNICACION Y LENGUAJE', 'Nivel 2', 2),
 (7, 'TIP02BFT01', 'PROGRAMACION II', 'Nivel 2', 2),
 (8, 'TIP02BFT02', 'ANALISIS II', 'Nivel 2', 2),
 (9, 'TIP02BFT03', 'NUEVAS TECNOLOGIAS E INNOVACION EN SISTEMAS DE INFORMACION', 'Nivel 2', 2),
@@ -103,7 +103,7 @@ INSERT INTO subjects (id, code, name, description, semester_id) VALUES
 (15, 'TIP03BFT04', 'INTERFACES DE USUARIO', 'Nivel 3', 3),
 (16, 'TIP03BFT05', 'PROBABILIDADES Y ESTADÍSTICA', 'Nivel 3', 3),
 (17, 'TIP03BFT06', 'ECUACIONES DIFERENCIALES', 'Nivel 3', 3),
-(18, 'TIP02BCL06', 'LIDERAZGO', 'Nivel 2', 2),
+(18, 'TIP02BCL06', 'LIDERAZGO', 'Nivel 4', 4),
 (19, 'TIP04BFT01', 'ALGORITMOS', 'Nivel 4', 4),
 (20, 'TIP04BFT02', 'SISTEMAS OPERATIVOS I', 'Nivel 4', 4),
 (21, 'TIP04BFT03', 'INFRAESTRUCTURA DE TI - I', 'Nivel 4', 4),
@@ -146,6 +146,13 @@ INSERT INTO subjects (id, code, name, description, semester_id) VALUES
 (58, 'TIP10BFT04', 'ESTRATEGIA, GESTIÓN Y ADQUISICIÓN EN LOS SISTEMAS DE INFORMACIÓN', 'Nivel 10', 10),
 (59, 'TIP10TEMTT1', 'TITULACIÓN II', 'Nivel 10', 10)
 ON CONFLICT (id) DO NOTHING;
+
+-- Data-fix: correct semester_id for subjects that were mis-seeded against the
+-- official malla curricular (COMUNICACION Y LENGUAJE belongs to segundo semestre,
+-- LIDERAZGO belongs to cuarto semestre, despite their TIP01/TIP02 code prefixes).
+-- Idempotent: safe to run every boot, also repairs already-seeded databases.
+UPDATE subjects SET description = 'Nivel 2', semester_id = 2 WHERE id = 6;
+UPDATE subjects SET description = 'Nivel 4', semester_id = 4 WHERE id = 18;
 
 -- Subject Prerequisites Seed
 INSERT INTO subject_prerequisites (subject_id, prerequisite_id) VALUES

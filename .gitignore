@@ -100,3 +100,6 @@ venv/
 .venv/
 **/venv/
 **/.venv/
+
+# Antigravity / agent tooling (global skill libraries, not project code)
+.agents/

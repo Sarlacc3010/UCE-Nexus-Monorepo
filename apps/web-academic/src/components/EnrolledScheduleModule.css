@@ -200,6 +200,49 @@
   color: #334155;
 }
 
+.class-semester-tag {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  align-self: flex-start;
+}
+
+.class-semester-tag.obligatorio {
+  background: rgba(239, 68, 68, 0.15);
+  color: #991b1b;
+}
+
+.class-semester-tag.opcional {
+  background: rgba(59, 130, 246, 0.15);
+  color: #1e3a8a;
+}
+
+.regularity-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #94a3b8;
+  flex-wrap: wrap;
+}
+
+.regularity-pill {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.regularity-pill.regular { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+.regularity-pill.irregular { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+.regularity-pill.egresado { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+.regularity-pill.sin_matricula_activa { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+
 /* Loaders and Empty States */
 .schedule-empty {
   display: flex;
