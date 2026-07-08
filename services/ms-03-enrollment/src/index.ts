@@ -34,14 +34,58 @@ app.get('/api/laboratories', async (req: Request, res: Response): Promise<void> 
   }
 });
 
-// 1. Obtener Semestres
+// 1. Obtener todos los semestres activos
 app.get('/api/semesters', async (req: Request, res: Response): Promise<void> => {
+  const client = await pool.connect();
   try {
-    const result = await pool.query('SELECT * FROM semesters ORDER BY level ASC');
-    res.json(result.rows);
+    const { rows } = await client.query('SELECT * FROM semesters WHERE active = true ORDER BY level ASC');
+    res.json(rows);
   } catch (error: any) {
     console.error('Error fetching semesters:', error);
     res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    client.release();
+  }
+});
+
+// 1.5 Obtener malla curricular agrupada por semestres
+app.get('/api/curriculum', async (req: Request, res: Response): Promise<void> => {
+  const client = await pool.connect();
+  try {
+    const semestersResult = await client.query('SELECT * FROM semesters ORDER BY level ASC');
+    const semesters = semestersResult.rows;
+
+    const subjectsResult = await client.query(`
+      SELECT 
+        s.id, s.code, s.name, s.description, s.semester_id,
+        COALESCE(
+          json_agg(
+            json_build_object('id', prereq.id, 'code', prereq.code, 'name', prereq.name)
+          ) FILTER (WHERE prereq.id IS NOT NULL), '[]'
+        ) as prerequisites
+      FROM subjects s
+      LEFT JOIN subject_prerequisites sp ON s.id = sp.subject_id
+      LEFT JOIN subjects prereq ON sp.prerequisite_id = prereq.id
+      GROUP BY s.id, s.code, s.name, s.description, s.semester_id
+      ORDER BY s.id ASC
+    `);
+
+    const subjects = subjectsResult.rows;
+
+    // Agrupar materias por semestre
+    const curriculum = semesters.map(semester => {
+      return {
+        ...semester,
+        subjects: subjects.filter(sub => sub.semester_id === semester.id)
+      };
+    });
+
+    res.json(curriculum);
+  } catch (error: any) {
+    console.error('Error fetching curriculum:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    client.release();
   }
 });
 
@@ -173,6 +217,28 @@ app.get('/api/students/:id/enrollments', async (req: Request, res: Response): Pr
     res.json(result.rows);
   } catch (error: any) {
     console.error('Error fetching student enrollments:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// 6.5. Obtener Horario Específico de un Estudiante
+app.get('/api/students/:id/schedules', async (req: Request, res: Response): Promise<void> => {
+  const studentIdStr = req.params.id;
+  try {
+    const query = `
+      SELECT s.*, p.name as parallel_name, sub.name as subject_name, sem.name as semester_name 
+      FROM schedules s
+      JOIN parallels p ON s.parallel_id = p.id
+      JOIN subjects sub ON p.subject_id = sub.id
+      JOIN semesters sem ON sub.semester_id = sem.id
+      JOIN student_enrollments se ON se.parallel_id = p.id
+      WHERE se.student_id = $1
+      ORDER BY s.dia, s.hora_inicio
+    `;
+    const result = await pool.query(query, [studentIdStr]);
+    res.json(result.rows);
+  } catch (error: any) {
+    console.error('Error fetching student specific schedules:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -556,6 +622,36 @@ app.post('/api/students/:student_id/enroll', async (req: Request, res: Response)
          updated_at = NOW()`,
       [student_id, semester_id, status, needs_payment, payment_amount]
     );
+
+    // Verificar prerrequisitos
+    for (const parallel_id of parallels) {
+      const prereqQuery = await client.query(
+        `SELECT sp.prerequisite_id, s.name as prereq_name, target_subj.name as target_name
+         FROM parallels p
+         JOIN subjects target_subj ON p.subject_id = target_subj.id
+         JOIN subject_prerequisites sp ON p.subject_id = sp.subject_id
+         JOIN subjects s ON sp.prerequisite_id = s.id
+         WHERE p.id = $1`,
+        [parallel_id]
+      );
+      
+      for (const prereq of prereqQuery.rows) {
+        // Verificar si el estudiante aprobó este prerrequisito
+        const gradeResult = await client.query(
+          `SELECT estado FROM grades 
+           JOIN parallels p ON grades.parallel_id = p.id
+           WHERE grades.student_id = $1 AND p.subject_id = $2`,
+          [student_id, prereq.prerequisite_id]
+        );
+        
+        const passed = gradeResult.rows.some((r: any) => r.estado === 'APROBADO');
+        if (!passed) {
+          await client.query('ROLLBACK');
+          res.status(400).json({ error: `Para matricularse en ${prereq.target_name} es necesario aprobar el prerrequisito: ${prereq.prereq_name}` });
+          return;
+        }
+      }
+    }
 
     // Limpiar inscripciones anteriores en este semestre (para permitir re-matrícula limpia)
     await client.query(
