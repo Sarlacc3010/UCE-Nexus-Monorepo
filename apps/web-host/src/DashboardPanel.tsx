@@ -49,81 +49,125 @@ export default function DashboardPanel({ token }: { token: string }) {
   if (!data) return null;
 
   return (
-    <div className="nexus-panel" style={{ padding: '1.5rem', margin: '1.5rem', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
-      <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1e293b' }}>
-        <LayoutDashboard size={28} color="#3b82f6" />
-        Dashboard en Tiempo Real
+    <div className="nexus-panel" style={{ padding: '2rem', margin: '0', backgroundColor: 'var(--bg-primary)', minHeight: '100vh', transition: 'var(--transition-smooth)' }}>
+      <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
+        <LayoutDashboard size={30} color="var(--uce-blue)" />
+        Dashboard de Telemetría en Vivo
       </h2>
 
       {/* Tarjetas Principales */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-        <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', borderLeft: '4px solid #3b82f6' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.75rem', marginBottom: '2.5rem' }}>
+        <div style={{ 
+          backgroundColor: 'var(--bg-secondary)', 
+          padding: '1.75rem', 
+          borderRadius: 'var(--radius-lg)', 
+          boxShadow: 'var(--shadow-md)', 
+          border: '1px solid var(--glass-border)', 
+          borderLeft: '5px solid var(--uce-blue)',
+          transition: 'var(--transition-smooth)',
+          cursor: 'default'
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 15px 30px rgba(13, 59, 142, 0.1)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <p style={{ color: '#64748b', fontSize: '0.875rem', fontWeight: 600, textTransform: 'uppercase' }}>Usuarios Concurrentes</p>
-              <h3 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#0f172a', margin: '0.5rem 0 0 0' }}>{data.activeUsers}</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Usuarios en el Sistema</p>
+              <h3 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0.5rem 0 0 0', fontFamily: 'var(--font-sans)' }}>{data.activeUsers}</h3>
             </div>
-            <Users size={32} color="#94a3b8" />
+            <div style={{ backgroundColor: 'rgba(13, 59, 142, 0.08)', padding: '12px', borderRadius: '50%' }}>
+              <Users size={28} color="var(--uce-blue)" />
+            </div>
           </div>
         </div>
 
-        <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', borderLeft: '4px solid #10b981' }}>
+        <div style={{ 
+          backgroundColor: 'var(--bg-secondary)', 
+          padding: '1.75rem', 
+          borderRadius: 'var(--radius-lg)', 
+          boxShadow: 'var(--shadow-md)', 
+          border: '1px solid var(--glass-border)', 
+          borderLeft: '5px solid #10b981',
+          transition: 'var(--transition-smooth)',
+          cursor: 'default'
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 15px 30px rgba(16, 185, 129, 0.1)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <p style={{ color: '#64748b', fontSize: '0.875rem', fontWeight: 600, textTransform: 'uppercase' }}>Actividad (Req/min)</p>
-              <h3 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#0f172a', margin: '0.5rem 0 0 0' }}>{data.requestsPerMinute}</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Peticiones de Auditoría</p>
+              <h3 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0.5rem 0 0 0', fontFamily: 'var(--font-sans)' }}>{data.requestsPerMinute}</h3>
             </div>
-            <Activity size={32} color="#94a3b8" />
+            <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', padding: '12px', borderRadius: '50%' }}>
+              <Activity size={28} color="#10b981" />
+            </div>
           </div>
         </div>
 
-        <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', borderLeft: '4px solid #8b5cf6' }}>
+        <div style={{ 
+          backgroundColor: 'var(--bg-secondary)', 
+          padding: '1.75rem', 
+          borderRadius: 'var(--radius-lg)', 
+          boxShadow: 'var(--shadow-md)', 
+          border: '1px solid var(--glass-border)', 
+          borderLeft: '5px solid #8b5cf6',
+          transition: 'var(--transition-smooth)',
+          cursor: 'default'
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 15px 30px rgba(139, 92, 246, 0.1)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <p style={{ color: '#64748b', fontSize: '0.875rem', fontWeight: 600, textTransform: 'uppercase' }}>Recaudación (Pagos)</p>
-              <h3 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#0f172a', margin: '0.5rem 0 0 0' }}>{data.paymentStats.aranceles + data.paymentStats.parqueadero}</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recaudación Financiera</p>
+              <h3 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0.5rem 0 0 0', fontFamily: 'var(--font-sans)' }}>
+                ${(data.paymentStats.aranceles + data.paymentStats.parqueadero).toFixed(2)}
+              </h3>
             </div>
-            <CreditCard size={32} color="#94a3b8" />
+            <div style={{ backgroundColor: 'rgba(139, 92, 246, 0.08)', padding: '12px', borderRadius: '50%' }}>
+              <CreditCard size={28} color="#8b5cf6" />
+            </div>
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
         
         {/* Matriculación */}
-        <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <GraduationCap size={20} color="#f59e0b" />
-            Estado de Matriculación
+        <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '2rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--glass-border)' }}>
+          <h3 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--bg-tertiary)', paddingBottom: '0.75rem', fontFamily: 'var(--font-sans)' }}>
+            <GraduationCap size={22} color="var(--uce-blue)" />
+            Matriculaciones Registradas
           </h3>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            <li style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #e2e8f0' }}>
-              <span style={{ color: '#475569' }}>Primera Matrícula</span>
-              <span style={{ fontWeight: 'bold', color: '#0f172a' }}>{data.enrollmentStats.primeraMatricula}</span>
+            <li style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid var(--bg-tertiary)', alignItems: 'center' }}>
+              <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Estudiantes Matriculados</span>
+              <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '1.1rem', backgroundColor: 'rgba(13, 59, 142, 0.06)', padding: '4px 12px', borderRadius: 'var(--radius-full)' }}>{data.enrollmentStats.primeraMatricula}</span>
             </li>
-            <li style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #e2e8f0' }}>
-              <span style={{ color: '#475569' }}>Segunda Matrícula</span>
-              <span style={{ fontWeight: 'bold', color: '#0f172a' }}>{data.enrollmentStats.segundaMatricula}</span>
+            <li style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid var(--bg-tertiary)', alignItems: 'center' }}>
+              <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Estudiantes Inscritos (Pendiente Pago)</span>
+              <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '1.1rem', backgroundColor: 'rgba(13, 59, 142, 0.06)', padding: '4px 12px', borderRadius: 'var(--radius-full)' }}>{data.enrollmentStats.segundaMatricula}</span>
             </li>
-            <li style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0' }}>
-              <span style={{ color: '#ef4444', fontWeight: 500 }}>Tercera Matrícula</span>
-              <span style={{ fontWeight: 'bold', color: '#ef4444' }}>{data.enrollmentStats.terceraMatricula}</span>
+            <li style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', alignItems: 'center' }}>
+              <span style={{ color: 'var(--uce-red)', fontWeight: 600 }}>Tercera Matrícula Solicitadas</span>
+              <span style={{ fontWeight: 700, color: 'var(--uce-red)', fontSize: '1.1rem', backgroundColor: 'rgba(225, 29, 72, 0.08)', padding: '4px 12px', borderRadius: 'var(--radius-full)' }}>{data.enrollmentStats.terceraMatricula}</span>
             </li>
           </ul>
         </div>
 
         {/* Localizaciones Populares */}
-        <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <MapPin size={20} color="#ec4899" />
-            Lugares Más Buscados (Mapas)
+        <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '2rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--glass-border)' }}>
+          <h3 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--bg-tertiary)', paddingBottom: '0.75rem', fontFamily: 'var(--font-sans)' }}>
+            <MapPin size={22} color="var(--uce-red)" />
+            Accesos de GeoCampus
           </h3>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {data.locations.map((loc, index) => (
-              <li key={loc.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: index < data.locations.length - 1 ? '1px solid #e2e8f0' : 'none' }}>
-                <span style={{ color: '#475569' }}>{loc.id}</span>
-                <span style={{ fontWeight: 'bold', color: '#0f172a', backgroundColor: '#f1f5f9', padding: '2px 8px', borderRadius: '12px', fontSize: '0.875rem' }}>
-                  {loc.count} reqs
+              <li key={loc.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: index < data.locations.length - 1 ? '1px solid var(--bg-tertiary)' : 'none', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{loc.id}</span>
+                <span style={{ fontWeight: 700, color: 'var(--uce-blue)', backgroundColor: 'rgba(13, 59, 142, 0.06)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.85rem' }}>
+                  {loc.count} búsquedas
                 </span>
               </li>
             ))}

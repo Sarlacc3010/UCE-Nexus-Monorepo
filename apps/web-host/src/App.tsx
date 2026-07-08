@@ -95,10 +95,7 @@ const getUserInfoFromToken = (jwtToken: string) => {
 };
 
 function App() {
-  const [activeTab, setActiveTab] = useState<string>(() => {
-    const hash = window.location.hash.replace('#', '');
-    return hash || 'home';
-  });
+  const [activeTab, setActiveTab] = useState<string>('home');
 
   useEffect(() => {
     // Sincronizar el hash con la pestaña activa
@@ -133,12 +130,12 @@ function App() {
 
   // Estado para el colapso del menú lateral
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({
-    academicos: false, // Empezar expandido
-    pagos: true,       // Empezar colapsado
-    reservas: false,   // Empezar expandido
+    academicos: true,
+    pagos: true,
+    reservas: true,
     maps: true,
     solicitudes: true,
-    administracion: false
+    administracion: true
   });
 
   useEffect(() => {

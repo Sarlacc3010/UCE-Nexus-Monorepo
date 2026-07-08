@@ -41,24 +41,21 @@ export default function AuditLogsPanel({ token }: { token: string }) {
 
   if (loading) {
     return (
-      <div className="nexus-panel p-6 m-4" style={{ backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1a1a1a' }}>
-          <Activity size={24} color="#0056b3" />
-          Logs del Sistema (Auditoría)
-        </h2>
-        <div className="nexus-loader-spin" style={{ margin: '2rem auto' }}></div>
+      <div className="nexus-panel" style={{ backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--glass-border)', padding: '2rem', minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="nexus-loader-spin" style={{ margin: '1rem' }}></div>
+        <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Cargando logs de auditoría...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="nexus-panel p-6 m-4" style={{ backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1a1a1a' }}>
-          <ShieldAlert size={24} color="#dc3545" />
-          Logs del Sistema (Auditoría)
+      <div className="nexus-panel" style={{ backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--glass-border)', padding: '2rem', minHeight: '80vh' }}>
+        <h2 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--uce-red)', fontFamily: 'var(--font-sans)' }}>
+          <ShieldAlert size={28} color="var(--uce-red)" />
+          Error de Conexión
         </h2>
-        <div style={{ backgroundColor: '#f8d7da', color: '#721c24', padding: '1rem', borderRadius: '4px' }}>
+        <div style={{ backgroundColor: 'rgba(225, 29, 72, 0.08)', color: 'var(--uce-red)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(225, 29, 72, 0.15)', fontWeight: 500 }}>
           {error}
         </div>
       </div>
@@ -66,51 +63,70 @@ export default function AuditLogsPanel({ token }: { token: string }) {
   }
 
   return (
-    <div className="nexus-panel" style={{ backgroundColor: '#fff', margin: '1.5rem', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1a1a1a' }}>
-        <Activity size={24} color="#0056b3" />
+    <div className="nexus-panel" style={{ backgroundColor: 'var(--bg-secondary)', padding: '2rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--glass-border)', minHeight: '100vh', transition: 'var(--transition-smooth)' }}>
+      <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '2.0rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
+        <Activity size={30} color="var(--uce-blue)" />
         Logs del Sistema (Auditoría)
       </h2>
       
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <div style={{ overflowX: 'auto', borderRadius: 'var(--radius-md)', border: '1px solid var(--bg-tertiary)' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontFamily: 'var(--font-sans)' }}>
           <thead>
-            <tr style={{ backgroundColor: '#f4f6f8', borderBottom: '2px solid #e2e8f0' }}>
-              <th style={{ padding: '12px', fontWeight: 600, color: '#4a5568' }}>Fecha / Hora</th>
-              <th style={{ padding: '12px', fontWeight: 600, color: '#4a5568' }}>Servicio</th>
-              <th style={{ padding: '12px', fontWeight: 600, color: '#4a5568' }}>Acción</th>
-              <th style={{ padding: '12px', fontWeight: 600, color: '#4a5568' }}>Detalles</th>
+            <tr style={{ backgroundColor: 'var(--bg-tertiary)', borderBottom: '2px solid var(--bg-tertiary)' }}>
+              <th style={{ padding: '16px', fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Fecha / Hora</th>
+              <th style={{ padding: '16px', fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Servicio</th>
+              <th style={{ padding: '16px', fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Acción</th>
+              <th style={{ padding: '16px', fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Detalles</th>
             </tr>
           </thead>
           <tbody>
             {logs.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ padding: '24px', textAlign: 'center', color: '#718096' }}>
+                <td colSpan={4} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 500 }}>
                   No hay eventos de auditoría registrados.
                 </td>
               </tr>
             ) : (
               logs.map(log => (
-                <tr key={log._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <td style={{ padding: '12px', color: '#2d3748', fontSize: '0.875rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Clock size={14} color="#718096" />
+                <tr key={log._id} style={{ borderBottom: '1px solid var(--bg-tertiary)', transition: 'var(--transition-fast)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(13, 59, 142, 0.02)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <td style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Clock size={14} color="var(--text-muted)" />
                       {new Date(log.timestamp).toLocaleString()}
                     </div>
                   </td>
-                  <td style={{ padding: '12px', color: '#2d3748', fontSize: '0.875rem', fontWeight: 500 }}>
-                    <span style={{ backgroundColor: '#edf2f7', padding: '4px 8px', borderRadius: '4px' }}>
+                  <td style={{ padding: '16px', color: 'var(--text-primary)', fontSize: '0.875rem', fontWeight: 600 }}>
+                    <span style={{ backgroundColor: 'rgba(13, 59, 142, 0.06)', color: 'var(--uce-blue)', padding: '4px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(13, 59, 142, 0.04)' }}>
                       {log.service}
                     </span>
                   </td>
-                  <td style={{ padding: '12px', color: '#2d3748', fontSize: '0.875rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      {log.action.includes('SUCCESS') ? <CheckCircle2 size={16} color="#38a169" /> : <ShieldAlert size={16} color="#e53e3e" />}
-                      {log.action}
+                  <td style={{ padding: '16px', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {log.action.includes('SUCCESS') || log.action.includes('TOGGLED') ? (
+                        <CheckCircle2 size={16} color="#10b981" />
+                      ) : (
+                        <ShieldAlert size={16} color="var(--uce-red)" />
+                      )}
+                      <span style={{ fontWeight: 500 }}>{log.action}</span>
                     </div>
                   </td>
-                  <td style={{ padding: '12px', color: '#4a5568', fontSize: '0.875rem' }}>
-                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordWrap: 'break-word', backgroundColor: '#f8fafc', padding: '8px', borderRadius: '4px' }}>
+                  <td style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                    <pre style={{ 
+                      margin: 0, 
+                      whiteSpace: 'pre-wrap', 
+                      wordWrap: 'break-word', 
+                      backgroundColor: 'var(--bg-primary)', 
+                      padding: '12px', 
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--glass-border)',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.8rem',
+                      maxHeight: '120px',
+                      overflowY: 'auto'
+                    }}>
                       {JSON.stringify(log.details, null, 2)}
                     </pre>
                   </td>

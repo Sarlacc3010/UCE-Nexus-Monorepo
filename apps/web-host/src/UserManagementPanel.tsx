@@ -107,56 +107,59 @@ export default function UserManagementPanel({ token }: { token: string }) {
   };
 
   return (
-    <div className="nexus-panel" style={{ padding: '1.5rem', margin: '1.5rem', backgroundColor: '#f8fafc', minHeight: '100vh', position: 'relative' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1e293b', margin: 0 }}>
-          <Users size={28} color="#10b981" />
+    <div className="nexus-panel" style={{ padding: '2rem', margin: '0', backgroundColor: 'var(--bg-primary)', minHeight: '100vh', transition: 'var(--transition-smooth)', position: 'relative' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h2 style={{ fontSize: '2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)', margin: 0, fontFamily: 'var(--font-sans)' }}>
+          <Users size={30} color="var(--uce-blue)" />
           Gestión de Usuarios
         </h2>
-        <button onClick={() => setShowCreateModal(true)} className="nexus-login-btn" style={{ width: 'auto', display: 'flex', gap: '8px', alignItems: 'center', padding: '10px 20px', margin: 0 }}>
+        <button onClick={() => setShowCreateModal(true)} className="nexus-login-btn" style={{ width: 'auto', display: 'flex', gap: '8px', alignItems: 'center', padding: '10px 20px', margin: 0, backgroundColor: 'var(--uce-blue)', borderRadius: 'var(--radius-sm)' }}>
           <UserPlus size={18} /> Crear Usuario
         </button>
       </div>
 
       {message && (
-        <div style={{ padding: '1rem', backgroundColor: '#dcfce7', color: '#166534', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ padding: '1rem', backgroundColor: '#dcfce7', color: '#166534', borderRadius: 'var(--radius-md)', border: '1px solid rgba(22, 101, 52, 0.15)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
           <Check size={18} /> {message}
         </div>
       )}
 
       {error && (
-        <div style={{ padding: '1rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ padding: '1rem', backgroundColor: 'rgba(225, 29, 72, 0.08)', color: 'var(--uce-red)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(225, 29, 72, 0.15)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
           <ShieldAlert size={18} /> {error}
         </div>
       )}
 
-      <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <div style={{ backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--glass-border)', overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontFamily: 'var(--font-sans)' }}>
           <thead>
-            <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
-              <th style={{ padding: '16px', fontWeight: 600, color: '#334155' }}>Usuario / Correo Inst.</th>
-              <th style={{ padding: '16px', fontWeight: 600, color: '#334155' }}>Nombres</th>
-              <th style={{ padding: '16px', fontWeight: 600, color: '#334155' }}>Cédula</th>
-              <th style={{ padding: '16px', fontWeight: 600, color: '#334155' }}>Carrera</th>
-              <th style={{ padding: '16px', fontWeight: 600, color: '#334155' }}>Roles</th>
-              <th style={{ padding: '16px', fontWeight: 600, color: '#334155' }}>Acciones</th>
+            <tr style={{ backgroundColor: 'var(--bg-tertiary)', borderBottom: '2px solid var(--bg-tertiary)' }}>
+              <th style={{ padding: '16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Usuario / Correo Inst.</th>
+              <th style={{ padding: '16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Nombres</th>
+              <th style={{ padding: '16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Cédula</th>
+              <th style={{ padding: '16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Carrera</th>
+              <th style={{ padding: '16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Roles</th>
+              <th style={{ padding: '16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} style={{ padding: '24px', textAlign: 'center' }}><div className="nexus-loader-spin" style={{ margin: 'auto' }}></div></td></tr>
+              <tr><td colSpan={6} style={{ padding: '32px', textAlign: 'center' }}><div className="nexus-loader-spin" style={{ margin: 'auto' }}></div></td></tr>
             ) : users.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No hay usuarios.</td></tr>
+              <tr><td colSpan={6} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 500 }}>No hay usuarios.</td></tr>
             ) : (
               users.map(u => (
-                <tr key={u.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <td style={{ padding: '16px', color: '#0f172a' }}>
-                    <div style={{ fontWeight: 'bold' }}>{u.username}</div>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{u.email}</div>
+                <tr key={u.id} style={{ borderBottom: '1px solid var(--bg-tertiary)', transition: 'var(--transition-fast)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(13, 59, 142, 0.02)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <td style={{ padding: '16px', color: 'var(--text-primary)' }}>
+                    <div style={{ fontWeight: 700 }}>{u.username}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{u.email}</div>
                   </td>
-                  <td style={{ padding: '16px', color: '#475569' }}>{u.first_name} {u.last_name}</td>
-                  <td style={{ padding: '16px', color: '#475569' }}>{u.cedula || 'N/A'}</td>
-                  <td style={{ padding: '16px', color: '#475569' }}>{u.career || 'N/A'}</td>
+                  <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>{u.first_name} {u.last_name}</td>
+                  <td style={{ padding: '16px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>{u.cedula || 'N/A'}</td>
+                  <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>{u.career || 'N/A'}</td>
                   <td style={{ padding: '16px' }}>
                     {editingId === u.id ? (
                       <input 
@@ -164,12 +167,20 @@ export default function UserManagementPanel({ token }: { token: string }) {
                         value={editRoles} 
                         onChange={e => setEditRoles(e.target.value)} 
                         className="nexus-form-input" 
-                        style={{ padding: '4px 8px', margin: 0 }}
+                        style={{ padding: '6px 12px', margin: 0, width: '100%', fontSize: '13px' }}
                       />
                     ) : (
                       <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                         {u.roles.map(r => (
-                          <span key={r} style={{ backgroundColor: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>{r}</span>
+                          <span key={r} style={{ 
+                            backgroundColor: r.toLowerCase().includes('admin') ? 'rgba(16, 185, 129, 0.08)' : 'rgba(13, 59, 142, 0.06)', 
+                            color: r.toLowerCase().includes('admin') ? '#10b981' : 'var(--uce-blue)', 
+                            padding: '3px 10px', 
+                            borderRadius: '12px', 
+                            fontSize: '0.75rem', 
+                            fontWeight: 600,
+                            border: r.toLowerCase().includes('admin') ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid rgba(13, 59, 142, 0.08)'
+                          }}>{r}</span>
                         ))}
                       </div>
                     )}
@@ -177,11 +188,11 @@ export default function UserManagementPanel({ token }: { token: string }) {
                   <td style={{ padding: '16px' }}>
                     {editingId === u.id ? (
                       <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={() => handleUpdateRole(u.id)} style={{ padding: '4px 8px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}><Save size={16} /></button>
-                        <button onClick={() => setEditingId(null)} style={{ padding: '4px 8px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}><X size={16} /></button>
+                        <button onClick={() => handleUpdateRole(u.id)} style={{ padding: '6px 10px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Save size={16} /></button>
+                        <button onClick={() => setEditingId(null)} style={{ padding: '6px 10px', backgroundColor: 'var(--uce-red)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><X size={16} /></button>
                       </div>
                     ) : (
-                      <button onClick={() => { setEditingId(u.id); setEditRoles(u.roles.join(', ')); }} style={{ padding: '4px 8px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                      <button onClick={() => { setEditingId(u.id); setEditRoles(u.roles.join(', ')); }} style={{ padding: '6px 10px', backgroundColor: 'var(--uce-blue)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                         <Edit size={16} />
                       </button>
                     )}
@@ -194,23 +205,27 @@ export default function UserManagementPanel({ token }: { token: string }) {
       </div>
 
       {showCreateModal && (
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100 }}>
-          <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '12px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0, color: '#0f172a' }}>Nuevo Usuario</h3>
-              <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#64748b" /></button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100, backdropFilter: 'blur(6px)', transition: 'all 0.3s ease' }}>
+          <div className="animate-slide-up" style={{ backgroundColor: 'var(--bg-secondary)', padding: '2.5rem', borderRadius: '16px', width: '100%', maxWidth: '520px', boxShadow: '0 25px 50px -12px rgba(13, 59, 142, 0.15)', border: '1px solid var(--glass-border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>Crear Nuevo Usuario</h3>
+              <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: '4px' }}><X size={24} color="var(--text-muted)" /></button>
             </div>
-            <form onSubmit={handleCreateUser} style={{ display: 'grid', gap: '1rem' }}>
-              <input type="text" placeholder="Nombre de Usuario (ej. aenavarrete)" className="nexus-form-input" required value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} />
-              <input type="text" placeholder="Nombres" className="nexus-form-input" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
-              <input type="text" placeholder="Apellidos" className="nexus-form-input" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} />
+            <form onSubmit={handleCreateUser} style={{ display: 'grid', gap: '1.25rem' }}>
+              <input type="text" placeholder="Nombre de Usuario (ej. aenavarrete)" className="nexus-form-input" style={{ width: '100%' }} required value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} />
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <input type="text" placeholder="Nombres" className="nexus-form-input" style={{ flex: 1 }} value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
+                <input type="text" placeholder="Apellidos" className="nexus-form-input" style={{ flex: 1 }} value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} />
+              </div>
               <input type="text" placeholder="Cédula (Opcional)" className="nexus-form-input" value={formData.cedula} onChange={e => setFormData({...formData, cedula: e.target.value})} />
               <input type="email" placeholder="Correo Personal (Opcional)" className="nexus-form-input" value={formData.personalEmail} onChange={e => setFormData({...formData, personalEmail: e.target.value})} />
               <input type="text" placeholder="Carrera (Opcional)" className="nexus-form-input" value={formData.career} onChange={e => setFormData({...formData, career: e.target.value})} />
-              <input type="password" placeholder="Contraseña Temprana" className="nexus-form-input" required value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
-              <input type="text" placeholder="Roles (separados por coma, ej. estudiante,admin)" className="nexus-form-input" required value={formData.roles} onChange={e => setFormData({...formData, roles: e.target.value})} />
-              <div style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>* El correo institucional se generará como {formData.username ? formData.username.toLowerCase() + '@uce.edu.ec' : '...@uce.edu.ec'}</div>
-              <button type="submit" className="nexus-login-btn">Crear Usuario</button>
+              <input type="password" placeholder="Contraseña Inicial" className="nexus-form-input" required value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+              <input type="text" placeholder="Roles (ej. estudiante, admin)" className="nexus-form-input" required value={formData.roles} onChange={e => setFormData({...formData, roles: e.target.value})} />
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', backgroundColor: 'var(--bg-primary)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--glass-border)' }}>
+                * Correo institucional generado: <strong>{formData.username ? formData.username.toLowerCase() + '@uce.edu.ec' : '...@uce.edu.ec'}</strong>
+              </div>
+              <button type="submit" className="nexus-login-btn" style={{ backgroundColor: 'var(--uce-blue)', borderRadius: 'var(--radius-sm)', fontWeight: 700, padding: '12px' }}>Crear Usuario</button>
             </form>
           </div>
         </div>
