@@ -76,10 +76,10 @@ export const initDb = async () => {
       console.log('🌱 Seeding estudiante (aenavarreteg1)...');
       await pool.query(
         `INSERT INTO users (id, username, email, first_name, last_name, password, roles, cedula, career) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [crypto.randomUUID(), 'aenavarreteg1', 'aenavarreteg1@uce.edu.ec', 'Abel', 'Navarrete', await bcrypt.hash('abel3010', 10), ['estudiante'], '1712345678', 'Ingeniería en Computación']
+        [crypto.randomUUID(), 'aenavarreteg1', 'aenavarreteg1@uce.edu.ec', 'Abel', 'Navarrete', await bcrypt.hash('abel3010', 10), ['estudiante'], '1712345678', 'Sistemas de Información']
       );
     } else {
-      await pool.query('UPDATE users SET roles = $1 WHERE username = $2', [['estudiante'], 'aenavarreteg1']);
+      await pool.query('UPDATE users SET roles = $1, career = $2 WHERE username = $3', [['estudiante'], 'Sistemas de Información', 'aenavarreteg1']);
     }
 
     // 5. Profesor

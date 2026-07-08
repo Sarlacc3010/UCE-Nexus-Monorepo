@@ -1,0 +1,259 @@
+﻿{
+    "variable":  [
+                     {
+                         "key":  "qa_api_url",
+                         "type":  "string",
+                         "value":  "http://uce-nexus-qa-alb-1024404750.us-east-1.elb.amazonaws.com"
+                     },
+                     {
+                         "key":  "token",
+                         "type":  "string",
+                         "value":  ""
+                     }
+                 ],
+    "info":  {
+                 "description":  "Coleccin configurada para pruebas automatizadas. Ejecuta \u0027Login\u0027 primero o usa Runner para correr todo.",
+                 "name":  "UCE Nexus - QA Environment (Auto-Configured)",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "item":  [
+                 {
+                     "name":  "Auth",
+                     "item":  [
+                                  {
+                                      "request":  {
+                                                      "body":  {
+                                                                   "raw":  "{\"username\":\"aenavarreteg1\",\"password\":\"password123\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               },
+                                                                   "mode":  "raw"
+                                                               },
+                                                      "method":  "POST",
+                                                      "url":  {
+                                                                  "host":  [
+                                                                               "{{qa_api_url}}"
+                                                                           ],
+                                                                  "raw":  "{{qa_api_url}}/api/login",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "login"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "noauth"
+                                                               }
+                                                  },
+                                      "name":  "1. Login (Auto-Sets Token)",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "var jsonData = pm.response.json();",
+                                                                                    "if (jsonData.token) {",
+                                                                                    "    pm.collectionVariables.set(\u0027token\u0027, jsonData.token);",
+                                                                                    "    console.log(\u0027Token guardado automáticamente en la colección\u0027);",
+                                                                                    "}"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Refresh Token",
+                                      "request":  {
+                                                      "body":  {
+                                                                   "raw":  "{\"refreshToken\":\"YOUR_REFRESH_TOKEN\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               },
+                                                                   "mode":  "raw"
+                                                               },
+                                                      "method":  "POST",
+                                                      "url":  {
+                                                                  "host":  [
+                                                                               "{{qa_api_url}}"
+                                                                           ],
+                                                                  "raw":  "{{qa_api_url}}/api/refresh",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "refresh"
+                                                                           ]
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Academic",
+                     "item":  [
+                                  {
+                                      "name":  "Get Student Grades",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "host":  [
+                                                                               "{{qa_api_url}}"
+                                                                           ],
+                                                                  "raw":  "{{qa_api_url}}/api/academic/students/7/grades",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "academic",
+                                                                               "students",
+                                                                               "7",
+                                                                               "grades"
+                                                                           ]
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "System",
+                     "item":  [
+                                  {
+                                      "name":  "Get System Config",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "host":  [
+                                                                               "{{qa_api_url}}"
+                                                                           ],
+                                                                  "raw":  "{{qa_api_url}}/api/system/config",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "system",
+                                                                               "config"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "noauth"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Telemetry Dashboard",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "host":  [
+                                                                               "{{qa_api_url}}"
+                                                                           ],
+                                                                  "raw":  "{{qa_api_url}}/api/telemetry/dashboard",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "telemetry",
+                                                                               "dashboard"
+                                                                           ]
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Reservas",
+                     "item":  [
+                                  {
+                                      "name":  "Crear Reserva",
+                                      "request":  {
+                                                      "body":  {
+                                                                   "raw":  "{\"labId\":\"LAB-01\",\"date\":\"2024-10-15\",\"timeSlot\":\"10:00-12:00\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               },
+                                                                   "mode":  "raw"
+                                                               },
+                                                      "method":  "POST",
+                                                      "url":  {
+                                                                  "host":  [
+                                                                               "{{qa_api_url}}"
+                                                                           ],
+                                                                  "raw":  "{{qa_api_url}}/api/reservas",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "reservas"
+                                                                           ]
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Chat",
+                     "item":  [
+                                  {
+                                      "name":  "Public Chat",
+                                      "request":  {
+                                                      "body":  {
+                                                                   "raw":  "{\"message\":\"Hola\",\"userId\":\"anon\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               },
+                                                                   "mode":  "raw"
+                                                               },
+                                                      "method":  "POST",
+                                                      "url":  {
+                                                                  "host":  [
+                                                                               "{{qa_api_url}}"
+                                                                           ],
+                                                                  "raw":  "{{qa_api_url}}/api/chat",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "chat"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "noauth"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Secure Chat",
+                                      "request":  {
+                                                      "body":  {
+                                                                   "raw":  "{\"message\":\"Hola, estoy autenticado\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               },
+                                                                   "mode":  "raw"
+                                                               },
+                                                      "method":  "POST",
+                                                      "url":  {
+                                                                  "host":  [
+                                                                               "{{qa_api_url}}"
+                                                                           ],
+                                                                  "raw":  "{{qa_api_url}}/api/chat/secure",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "chat",
+                                                                               "secure"
+                                                                           ]
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 }
+             ],
+    "auth":  {
+                 "bearer":  [
+                                {
+                                    "key":  "token",
+                                    "type":  "string",
+                                    "value":  "{{token}}"
+                                }
+                            ],
+                 "type":  "bearer"
+             }
+}

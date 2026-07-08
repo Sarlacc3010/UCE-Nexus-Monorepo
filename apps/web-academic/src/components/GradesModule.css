@@ -91,10 +91,17 @@
   border: 1px solid #a7f3d0;
 }
 
-.status-cursando {
+.status-cursando,
+.status-matriculado {
   background: #fef3c7;
   color: #92400e;
   border: 1px solid #fde68a;
+}
+
+.status-pendiente {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border: 1px dashed #cbd5e1;
 }
 
 .status-desconocido {
@@ -187,6 +194,12 @@
 .subject-col {
   color: #0f172a;
   width: 30%;
+}
+
+.attempt-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ef4444;
 }
 
 .text-center {
@@ -318,9 +331,12 @@
   letter-spacing: 0.5px;
 }
 
-.tag-cursando { background: #fef3c7; color: #92400e; }
+.tag-cursando, .tag-matriculado { background: #fef3c7; color: #92400e; }
 .tag-aprobado { background: #d1fae5; color: #065f46; }
 .tag-mixto { background: #f1f5f9; color: #475569; }
+.tag-pendiente { background: #f1f5f9; color: #94a3b8; }
+.tag-obligatorio { background: #fee2e2; color: #991b1b; margin-left: 8px; }
+.tag-opcional { background: #dbeafe; color: #1e3a8a; margin-left: 8px; }
 
 /* Row Highlights */
 .grade-row-reprobado td {
@@ -329,3 +345,23 @@
 .grade-row-retirado td {
   opacity: 0.6;
 }
+.grade-row-pendiente td {
+  color: #94a3b8;
+}
+
+/* Regularity badge (Regular / Irregular) in header */
+.regularity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-top: 6px;
+}
+.regularity-regular { background: rgba(16, 185, 129, 0.2); color: #d1fae5; }
+.regularity-irregular { background: rgba(245, 158, 11, 0.2); color: #fef3c7; }
+.regularity-egresado { background: rgba(59, 130, 246, 0.2); color: #dbeafe; }
+.regularity-sin_matricula_activa { background: rgba(148, 163, 184, 0.2); color: #f1f5f9; }

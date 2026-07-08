@@ -383,7 +383,7 @@ services:
   ms-04-payment-write:
     build:
       context: ../../services/ms-04-payment-write
-      dockerfile: dockerfile
+      dockerfile: Dockerfile
     image: docker-ms-04-payment-write:latest
     container_name: nexus-ms-04-payment-write
     restart: unless-stopped
@@ -405,9 +405,10 @@ services:
   ms-05-payment-read:
     build:
       context: ../../services/ms-05-payment-read
-      dockerfile: dockerfile
+      dockerfile: Dockerfile
     image: docker-ms-05-payment-read:latest
     container_name: nexus-ms-05-payment-read
+
     restart: unless-stopped
     ports:
       - "4005:4005"

@@ -226,7 +226,7 @@ app.get('/api/students/:id/schedules', async (req: Request, res: Response): Prom
   const studentIdStr = req.params.id;
   try {
     const query = `
-      SELECT s.*, p.name as parallel_name, sub.name as subject_name, sem.name as semester_name 
+      SELECT s.*, p.name as parallel_name, sub.name as subject_name, sem.name as semester_name, sem.level as semester_level
       FROM schedules s
       JOIN parallels p ON s.parallel_id = p.id
       JOIN subjects sub ON p.subject_id = sub.id
@@ -284,6 +284,146 @@ app.get('/api/students/:id/grades', async (req: Request, res: Response): Promise
     res.json(result.rows);
   } catch (error: any) {
     console.error('Error fetching student grades:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// 8.5. Estado académico consolidado del estudiante:
+// - Recorre TODA la malla curricular (fuente única: subjects.semester_id)
+// - Cruza con el historial completo de notas del estudiante (todas las materias, todos los intentos)
+// - Determina el semestre pendiente más bajo (obligatorio), el/los semestre(s) en curso,
+//   y si el estudiante es REGULAR (matriculado solo en el semestre obligatorio, materias
+//   completas, primera matrícula) o IRREGULAR (matriculado en 2 semestres, o repitiendo, etc.)
+// Esta es la fuente única de verdad que consumen Calificaciones, Horario y el resumen de inicio.
+app.get('/api/students/:id/academic-status', async (req: Request, res: Response): Promise<void> => {
+  const studentId = req.params.id;
+  try {
+    // Última nota conocida por materia (por si el estudiante tiene varios intentos/paralelos
+    // históricos de la misma materia), junto con el número de intentos totales.
+    const query = `
+      WITH student_subject_grades AS (
+        SELECT
+          sub.id AS subject_id,
+          p.name AS parallel_name,
+          g.estado,
+          g.nota_total,
+          g.nota_individual,
+          g.nota_grupal,
+          g.examen_hemisemestre,
+          g.examen_final,
+          g.updated_at,
+          g.id AS grade_id,
+          ROW_NUMBER() OVER (PARTITION BY sub.id ORDER BY g.updated_at ASC, g.id ASC) AS attempt_number,
+          COUNT(*) OVER (PARTITION BY sub.id) AS attempts_count
+        FROM grades g
+        JOIN parallels p  ON g.parallel_id = p.id
+        JOIN subjects sub ON p.subject_id  = sub.id
+        WHERE g.student_id = $1
+      ),
+      latest_per_subject AS (
+        SELECT DISTINCT ON (subject_id)
+          subject_id, parallel_name, estado, nota_total, nota_individual, nota_grupal,
+          examen_hemisemestre, examen_final, attempts_count, attempt_number
+        FROM student_subject_grades
+        ORDER BY subject_id, attempt_number DESC
+      )
+      SELECT
+        sub.id, sub.code, sub.name,
+        sem.id AS semester_id, sem.level AS semester_level, sem.name AS semester_name,
+        lps.parallel_name, lps.estado AS raw_estado, lps.nota_total, lps.nota_individual, lps.nota_grupal,
+        lps.examen_hemisemestre, lps.examen_final, lps.attempts_count, lps.attempt_number
+      FROM subjects sub
+      JOIN semesters sem ON sub.semester_id = sem.id
+      LEFT JOIN latest_per_subject lps ON lps.subject_id = sub.id
+      ORDER BY sem.level ASC, sub.id ASC
+    `;
+    const { rows } = await pool.query(query, [studentId]);
+
+    // Normalizar estado para consumo del frontend: PENDIENTE (nunca la tomó) / MATRICULADO
+    // (equivalente a CURSANDO, nombre pedido por negocio) / APROBADO / REPROBADO / RETIRADO
+    const subjects = rows.map((r: any) => ({
+      id: r.id,
+      code: r.code,
+      name: r.name,
+      semester_id: r.semester_id,
+      semester_level: r.semester_level,
+      semester_name: r.semester_name,
+      parallel_name: r.parallel_name ?? null,
+      nota_total: r.nota_total,
+      nota_individual: r.nota_individual,
+      nota_grupal: r.nota_grupal,
+      examen_hemisemestre: r.examen_hemisemestre,
+      examen_final: r.examen_final,
+      attempts_count: r.attempts_count ? Number(r.attempts_count) : 0,
+      attempt_number: r.attempt_number ? Number(r.attempt_number) : 0,
+      is_first_attempt: !r.attempts_count || Number(r.attempts_count) <= 1,
+      estado: r.raw_estado === 'CURSANDO' ? 'MATRICULADO' : (r.raw_estado ?? 'PENDIENTE')
+    }));
+
+    const approvedCount = subjects.filter(s => s.estado === 'APROBADO').length;
+
+    // Semestre pendiente más bajo = primer nivel (1..10) donde queda al menos una materia sin aprobar
+    let lowestPendingLevel: number | null = null;
+    for (let level = 1; level <= 10; level++) {
+      const atLevel = subjects.filter(s => s.semester_level === level);
+      if (atLevel.length > 0 && atLevel.some(s => s.estado !== 'APROBADO')) {
+        lowestPendingLevel = level;
+        break;
+      }
+    }
+
+    const enrolledSubjects = subjects.filter(s => s.estado === 'MATRICULADO');
+    const enrolledLevels = Array.from(new Set(enrolledSubjects.map(s => s.semester_level))).sort((a, b) => a - b);
+
+    const mandatoryLevel = lowestPendingLevel;
+    const optionalLevel = lowestPendingLevel && lowestPendingLevel < 10 ? lowestPendingLevel + 1 : null;
+
+    let regularity: 'REGULAR' | 'IRREGULAR' | 'SIN_MATRICULA_ACTIVA' | 'EGRESADO';
+    if (lowestPendingLevel === null) {
+      regularity = 'EGRESADO';
+    } else if (enrolledLevels.length === 0) {
+      regularity = 'SIN_MATRICULA_ACTIVA';
+    } else if (enrolledLevels.length === 1 && enrolledLevels[0] === mandatoryLevel) {
+      const pendingAtMandatory = subjects.filter(s => s.semester_level === mandatoryLevel && s.estado !== 'APROBADO');
+      const enrolledIdsAtMandatory = new Set(enrolledSubjects.map(s => s.id));
+      const coversAllPending = pendingAtMandatory.every(s => enrolledIdsAtMandatory.has(s.id));
+      const allFirstAttempt = enrolledSubjects.every(s => s.is_first_attempt);
+      regularity = (coversAllPending && allFirstAttempt) ? 'REGULAR' : 'IRREGULAR';
+    } else {
+      // Matriculado en 2 semestres (o en niveles que no son el obligatorio) => irregular
+      regularity = 'IRREGULAR';
+    }
+
+    // Agrupar por semestre para consumo directo del frontend (Calificaciones, Malla, resumen)
+    const semesterMap = new Map<number, { level: number; semester_id: number; semester_name: string; subjects: any[] }>();
+    for (const s of subjects) {
+      if (!semesterMap.has(s.semester_level)) {
+        semesterMap.set(s.semester_level, { level: s.semester_level, semester_id: s.semester_id, semester_name: s.semester_name, subjects: [] });
+      }
+      semesterMap.get(s.semester_level)!.subjects.push(s);
+    }
+    const semesters = Array.from(semesterMap.values())
+      .sort((a, b) => a.level - b.level)
+      .map(sem => ({
+        ...sem,
+        is_mandatory: sem.level === mandatoryLevel,
+        is_optional: sem.level === optionalLevel,
+        is_current: enrolledLevels.includes(sem.level)
+      }));
+
+    res.json({
+      student_id: Number(studentId),
+      regularity,
+      lowest_pending_level: lowestPendingLevel,
+      mandatory_level: mandatoryLevel,
+      optional_level: optionalLevel,
+      enrolled_levels: enrolledLevels,
+      approved_count: approvedCount,
+      total_curriculum_count: subjects.length,
+      semesters
+    });
+  } catch (error: any) {
+    console.error('Error computing academic status:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
