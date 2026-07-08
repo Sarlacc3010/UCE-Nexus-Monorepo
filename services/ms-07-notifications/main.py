@@ -6,9 +6,12 @@ import logging
 import pika
 import smtplib
 import httpx
+import base64
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from fastapi import FastAPI
+from email.mime.base import MIMEBase
+from email import encoders
+from fastapi import FastAPI, Body
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
@@ -346,6 +349,203 @@ async def lifespan(app: FastAPI):
 
 # Registrar el ciclo de vida en FastAPI
 app.router.lifespan_context = lifespan
+
+def get_payment_email_template(payment_id: str, amount: float, description: str) -> str:
+    """Genera plantilla de correo institucional premium para la confirmación de pago"""
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Confirmación de Pago - UCE Nexus</title>
+  <style>
+    body {{
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 0;
+    }}
+    .container {{
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      border: 1px solid #e1e8ed;
+    }}
+    .header {{
+      background-color: #002F6C;
+      padding: 30px;
+      text-align: center;
+      border-bottom: 4px solid #D4AF37;
+    }}
+    .header h1 {{
+      color: #ffffff;
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }}
+    .content {{
+      padding: 40px 30px;
+      color: #333333;
+      line-height: 1.6;
+    }}
+    .welcome {{
+      font-size: 18px;
+      font-weight: bold;
+      color: #002F6C;
+      margin-top: 0;
+      margin-bottom: 20px;
+    }}
+    .details-box {{
+      background-color: #f8fafc;
+      border-left: 4px solid #D4AF37;
+      padding: 20px;
+      margin: 25px 0;
+      border-radius: 0 8px 8px 0;
+    }}
+    .details-box table {{
+      width: 100%;
+      border-collapse: collapse;
+    }}
+    .details-box td {{
+      padding: 8px 0;
+    }}
+    .details-label {{
+      font-weight: bold;
+      color: #4a5568;
+      width: 150px;
+    }}
+    .details-value {{
+      color: #1a202c;
+    }}
+    .footer {{
+      background-color: #f8fafc;
+      padding: 20px 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #718096;
+      border-top: 1px solid #edf2f7;
+    }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>UCE Nexus - Recibo Digital</h1>
+    </div>
+    <div class="content">
+      <p class="welcome">¡Confirmación de Pago Exitoso!</p>
+      <p>Te informamos que hemos recibido satisfactoriamente tu pago en la plataforma UCE-Nexus. Adjunto a este correo encontrarás el comprobante oficial en formato PDF.</p>
+      
+      <div class="details-box">
+        <table>
+          <tr>
+            <td class="details-label">ID de Pago:</td>
+            <td class="details-value"><strong>{payment_id}</strong></td>
+          </tr>
+          <tr>
+            <td class="details-label">Concepto:</td>
+            <td class="details-value">{description}</td>
+          </tr>
+          <tr>
+            <td class="details-label">Valor Cobrado:</td>
+            <td class="details-value"><strong>${amount:.2f} USD</strong></td>
+          </tr>
+          <tr>
+            <td class="details-label">Estado:</td>
+            <td class="details-value" style="color: #2f855a; font-weight: bold;">✓ Pagado</td>
+          </tr>
+        </table>
+      </div>
+      
+      <p>Cualquier inquietud o reclamo sobre este valor, por favor acércate a la Tesorería General de la Universidad o responde mediante los canales oficiales.</p>
+    </div>
+    <div class="footer">
+      <p>Este es un mensaje automático generado por el sistema financiero, por favor no respondas a este correo.<br>
+      © 2026 Universidad Central del Ecuador. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+def send_payment_email_smtp(recipient_email: str, subject: str, body_html: str, pdf_data: bytes, payment_id: str) -> bool:
+    """Envía la confirmación del pago adjuntando la factura PDF decodificada, o la simula en consola"""
+    actual_recipient = SMTP_OVERRIDE_RECIPIENT if SMTP_OVERRIDE_RECIPIENT else recipient_email
+
+    if not all([SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD]):
+        logger.warning("⚠️ [SMTP Payments] Configuración incompleta. SIMULANDO envío de comprobante de pago:")
+        logger.warning(f"   📧 [Simulado] Para: {actual_recipient} (Original: {recipient_email})")
+        logger.warning(f"   📧 [Simulado] Asunto: {subject}")
+        logger.warning(f"   📧 [Simulado] PDF Adjuntado: Factura_{payment_id[:8]}.pdf ({len(pdf_data)} bytes)")
+        return True
+
+    try:
+        msg = MIMEMultipart('mixed')
+        msg['Subject'] = subject
+        msg['From'] = f"{SMTP_FROM_NAME} <{SMTP_FROM_EMAIL}>"
+        msg['To'] = actual_recipient
+
+        # Cuerpo en formato HTML
+        msg_alternative = MIMEMultipart('alternative')
+        msg.attach(msg_alternative)
+        
+        text_fallback = f"Hola!\nHemos confirmado tu pago de ID {payment_id}. Adjunto encontrarás tu factura en PDF.\nUCE-Nexus"
+        msg_alternative.attach(MIMEText(text_fallback, 'plain', 'utf-8'))
+        msg_alternative.attach(MIMEText(body_html, 'html', 'utf-8'))
+
+        # Adjuntar el archivo PDF de la factura
+        part = MIMEBase('application', 'pdf')
+        part.set_payload(pdf_data)
+        encoders.encode_base64(part)
+        part.add_header(
+            'Content-Disposition',
+            f'attachment; filename="Factura_{payment_id[:8]}.pdf"'
+        )
+        msg.attach(part)
+
+        logger.info(f"📧 [SMTP Payments] Conectando a servidor SMTP {SMTP_HOST}:{SMTP_PORT} para comprobantes...")
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+        server.ehlo()
+        if SMTP_USE_TLS:
+            server.starttls()
+            server.ehlo()
+            
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.sendmail(SMTP_FROM_EMAIL, [actual_recipient], msg.as_string())
+        server.quit()
+        
+        logger.info(f"✅ [SMTP Payments] Correo con factura enviado exitosamente a {actual_recipient}")
+        return True
+    except Exception as e:
+        logger.error(f"❌ [SMTP Payments] Error al enviar correo de pago a {actual_recipient}: {e}")
+        return False
+
+@app.post("/api/notifications/payment")
+def send_payment_notification(
+    recipient_email: str = Body(...),
+    payment_id: str = Body(...),
+    amount: float = Body(...),
+    description: str = Body(...),
+    pdf_base64: str = Body(...)
+):
+    """API para recibir comprobantes en Base64 y enviarlos por correo de forma asíncrona"""
+    try:
+        pdf_data = base64.b64decode(pdf_base64)
+        email_html = get_payment_email_template(payment_id, amount, description)
+        subject = f"Comprobante Electrónico de Pago {payment_id[:8]} - UCE-Nexus"
+
+        def run_email_send():
+            send_payment_email_smtp(recipient_email, subject, email_html, pdf_data, payment_id)
+
+        # Enviar asíncronamente para dar respuesta inmediata al microservicio de pagos
+        threading.Thread(target=run_email_send, daemon=True).start()
+        
+        return {"status": "sending", "message": "Proceso de envío de factura iniciado."}
+    except Exception as e:
+        logger.error(f"❌ Error al iniciar envío de notificación de pago: {e}")
+        return {"status": "error", "message": str(e)}
 
 @app.get("/health")
 def health_check():

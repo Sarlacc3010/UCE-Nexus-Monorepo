@@ -16,25 +16,11 @@ services:
       - pg-iam-data:/var/lib/postgresql/data
     ports:
       - "5431:5432"
-    networks:
-      - nexus-db-network
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:24.0
-    container_name: nexus-keycloak
-    command: start-dev
-    restart: unless-stopped
-    environment:
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres-iam:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: password
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres-iam
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - nexus-db-network
 

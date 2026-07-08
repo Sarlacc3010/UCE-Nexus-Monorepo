@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import BookingApp from './App';
 import DashboardApp from './DashboardApp';
+import CanchasModule from './components/CanchasModule';
 import {
   GraduationCap,
   Award,
@@ -87,6 +88,8 @@ export default function AcademicApp({ activeTab: propActiveTab, token: propToken
         return <DashboardApp />;
       case 'matriculacion':
         return <BookingApp />;
+      case 'canchas':
+        return <CanchasModule token={token} />;
       default: {
         const getTabTitle = (tab: string) => {
           const titles: Record<string, string> = {

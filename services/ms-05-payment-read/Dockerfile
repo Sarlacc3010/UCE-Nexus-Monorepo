@@ -1,0 +1,48 @@
+# ==========================================
+# Etapa 1: Construcción (Builder)
+# ==========================================
+FROM public.ecr.aws/docker/library/node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copiar archivos de definición de dependencias
+COPY package*.json ./
+
+# Instalar todas las dependencias
+RUN npm ci
+
+# Copiar el código fuente y la configuración
+COPY . .
+
+# Compilar el código TypeScript a JavaScript
+RUN npm run build
+
+# ==========================================
+# Etapa 2: Imagen de Producción (Runner)
+# ==========================================
+FROM public.ecr.aws/docker/library/node:20-alpine AS runner
+
+# Establecer entorno de producción
+ENV NODE_ENV=production
+WORKDIR /app
+
+# Copiar archivos de definición de dependencias
+COPY package*.json ./
+
+# Instalar únicamente dependencias de producción
+RUN npm ci --omit=dev && npm cache clean --force
+
+# Copiar el código compilado desde la etapa de construcción
+COPY --from=builder /app/dist ./dist
+
+# Cambiar el propietario de la carpeta de trabajo al usuario 'node' no-root
+RUN chown -R node:node /app
+
+# Usar el usuario 'node' para ejecutar la aplicación
+USER node
+
+# Exponer el puerto del microservicio
+EXPOSE 4005
+
+# Ejecutar el código compilado
+CMD ["node", "dist/index.js"]

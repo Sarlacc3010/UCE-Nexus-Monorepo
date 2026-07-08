@@ -1,0 +1,30 @@
+{
+  "name": "ms-04-payment-write",
+  "version": "1.0.0",
+  "description": "UCE-Nexus Payment Write Service (CQRS Command)",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn src/index.ts",
+    "build": "tsc"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.0.0",
+    "kafkajs": "^2.2.4",
+    "pdfkit": "^0.15.0",
+    "pg": "^8.11.3",
+    "stripe": "^14.22.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.9.1",
+    "@types/pdfkit": "^0.13.4",
+    "@types/pg": "^8.11.4",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^6.0.3"
+  }
+}

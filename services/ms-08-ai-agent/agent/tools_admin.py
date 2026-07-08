@@ -147,7 +147,7 @@ async def get_platform_metrics() -> str:
         f"| MS-08 AI Agent (self) | ✅ Online | — |\n"
         f"| Redis Cache | ✅ Online | <1ms |\n"
         f"| RabbitMQ | ✅ Online | — |\n"
-        f"| Keycloak IAM | ✅ Online | — |\n\n"
+        f"| MS-02 Identity (IAM) | ✅ Online | — |\n\n"
         f"> ⚠️ *Latencias de MS-06/MS-11/infraestructura son estimadas (MVP).*"
     )
 

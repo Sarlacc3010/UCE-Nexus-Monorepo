@@ -44,6 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       gateway: ${{ steps.filter.outputs.gateway }}
+      identity: ${{ steps.filter.outputs.identity }}
       booking: ${{ steps.filter.outputs.booking }}
       notifications: ${{ steps.filter.outputs.notifications }}
       catalog: ${{ steps.filter.outputs.catalog }}
@@ -54,6 +55,9 @@ jobs:
       enrollment: ${{ steps.filter.outputs.enrollment }}
       ai_agent: ${{ steps.filter.outputs.ai_agent }}
       geocampus: ${{ steps.filter.outputs.geocampus }}
+      payment_write: ${{ steps.filter.outputs.payment_write }}
+      payment_read: ${{ steps.filter.outputs.payment_read }}
+      web_payments: ${{ steps.filter.outputs.web_payments }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -65,6 +69,8 @@ jobs:
           filters: |
             gateway:
               - 'services/ms-01-gateway/**'
+            identity:
+              - 'services/ms-02-identity/**'
             booking:
               - 'services/ms-06-booking/**'
             notifications:
@@ -85,6 +91,12 @@ jobs:
               - 'services/ms-08-ai-agent/**'
             geocampus:
               - 'services/ms-09-geocampus/**'
+            payment_write:
+              - 'services/ms-04-payment-write/**'
+            payment_read:
+              - 'services/ms-05-payment-read/**'
+            web_payments:
+              - 'apps/web-payments/**'
 
   # ==========================================
   # 2.5. CI: Pruebas Unitarias
@@ -98,8 +110,18 @@ jobs:
 
       - name: Set up Protobuf Compiler (protoc)
         run: |
-          sudo apt-get update && sudo apt-get install -y protobuf-compiler
+          # Instalar protoc desde GitHub releases (apt-get da protoc 3.12 que es incompatible con prost-build 0.12)
+          PROTOC_VERSION="25.3"
+          curl -sLO "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip"
+          sudo unzip -q protoc-${PROTOC_VERSION}-linux-x86_64.zip -d /usr/local
           protoc --version
+
+      - name: Set up Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            services/ms-11-catalog
+            services/ms-09-geocampus
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -111,6 +133,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache-dependency-path: 'services/ms-06-booking/go.sum'
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -122,12 +145,15 @@ jobs:
           pip install -r services/ms-08-ai-agent/requirements.txt
 
       - name: Install Monorepo Dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Run Unit Tests (Turbo)
         run: npm run test
 
       - name: Run Rust Tests (Catalog)
+        env:
+          SQLX_OFFLINE: true
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test
         run: |
           cd services/ms-11-catalog
           cargo test
@@ -156,6 +182,49 @@ jobs:
         # en producción apuntaría al ambiente de staging.
         run: |
           k6 run packages/load-testing/k6-stress-test.js || echo "K6 test allowed to fail if Gateway is not running in CI"
+
+  # ==========================================
+  # 3. Build & Push: API Gateway (MS-01)
+  # ==========================================
+  build-identity:
+    name: Build & Push Identity (MS-02)
+    needs: [changes-detector, secrets-scan, run-tests]
+    if: ${{ needs.changes-detector.outputs.identity == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set Docker Image Tag
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
+            echo "IMAGE_TAG=qa" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/ms-02-identity
+          file: ./services/ms-02-identity/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/ms-02-identity:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/ms-02-identity:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # ==========================================
   # 3. Build & Push: API Gateway (MS-01)
@@ -461,6 +530,49 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ==========================================
+  # 9b. Build & Push: Web Payments
+  # ==========================================
+  build-web-payments:
+    name: Build & Push Web Payments
+    needs: [changes-detector, secrets-scan, run-tests]
+    if: ${{ needs.changes-detector.outputs.web_payments == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set Docker Image Tag
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
+            echo "IMAGE_TAG=qa" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/web-payments
+          file: ./apps/web-payments/dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/web-payments:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/web-payments:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================
   # 10. Build & Push: Enrollment (MS-03)
   # ==========================================
   build-enrollment:
@@ -631,3 +743,277 @@ jobs:
             ${{ secrets.DOCKER_HUB_USERNAME }}/ms-09-geocampus:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # ==========================================
+  # 14b. Build & Push: Payment Write (MS-04)
+  # ==========================================
+  build-payment-write:
+    name: Build & Push Payment Write (MS-04)
+    needs: [changes-detector, secrets-scan, run-tests]
+    if: ${{ needs.changes-detector.outputs.payment_write == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set Docker Image Tag
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
+            echo "IMAGE_TAG=qa" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/ms-04-payment-write
+          file: ./services/ms-04-payment-write/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/ms-04-payment-write:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/ms-04-payment-write:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================
+  # 14c. Build & Push: Payment Read (MS-05)
+  # ==========================================
+  build-payment-read:
+    name: Build & Push Payment Read (MS-05)
+    needs: [changes-detector, secrets-scan, run-tests]
+    if: ${{ needs.changes-detector.outputs.payment_read == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set Docker Image Tag
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
+            echo "IMAGE_TAG=qa" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/ms-05-payment-read
+          file: ./services/ms-05-payment-read/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/ms-05-payment-read:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/ms-05-payment-read:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================
+  # 15. CD: Despliegue en Servidores (EC2)
+  # ==========================================
+  deploy:
+    name: Deploy to EC2 via Bastion Jump
+    needs: [run-tests, build-gateway, build-identity, build-booking, build-notifications, build-catalog, build-web-host, build-web-academic, build-web-campus, build-web-chatbot, build-web-payments, build-enrollment, build-ai-agent, build-geocampus, build-payment-write, build-payment-read]
+    # Se ejecuta de forma segura después de que todos los builds han finalizado con éxito
+    # Solo cuando se hace un push/merge directo en QA o se crea una versión tagged v* (Production)
+    if: always() && github.event_name == 'push' && (github.ref_name == 'QA' || startsWith(github.ref_name, 'v')) && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # ==========================================
+      # 1. Configurar Llave SSH e Identidad de Red
+      # ==========================================
+      - name: Configure SSH and Jump Host (Bastion)
+        run: |
+          mkdir -p ~/.ssh
+          
+          # Determinar variables según la rama (QA o Tag de Versión/Production)
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "DEPLOY_ENV=Production" >> $GITHUB_ENV
+            echo "DOCKER_HUB_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+            echo "BASTION_IP=${{ secrets.PROD_BASTION_IP }}" >> $GITHUB_ENV
+            echo "APP_PRIVATE_IP=${{ secrets.PROD_APP_PRIVATE_IP }}" >> $GITHUB_ENV
+            echo "DB_PRIVATE_IP=${{ secrets.PROD_DB_PRIVATE_IP }}" >> $GITHUB_ENV
+            echo "${{ secrets.PROD_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          else
+            echo "DEPLOY_ENV=QA" >> $GITHUB_ENV
+            echo "DOCKER_HUB_TAG=qa" >> $GITHUB_ENV
+            echo "BASTION_IP=${{ secrets.QA_BASTION_IP }}" >> $GITHUB_ENV
+            echo "DB_PRIVATE_IP=${{ secrets.QA_DB_PRIVATE_IP }}" >> $GITHUB_ENV
+            echo "${{ secrets.QA_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          fi
+          
+          chmod 600 ~/.ssh/id_rsa
+
+      # ==========================================
+      # 1b. Descubrir IP del App Server (QA - ASG)
+      # ==========================================
+      - name: Discover QA App Server IP via boto3
+        if: "!startsWith(github.ref_name, 'v')"
+        env:
+          QA_KEY_ID: ${{ secrets.QA_AWS_ACCESS_KEY_ID }}
+          QA_SECRET: ${{ secrets.QA_AWS_SECRET_ACCESS_KEY }}
+          QA_TOKEN: ${{ secrets.QA_AWS_SESSION_TOKEN }}
+        run: |
+          pip install --quiet boto3
+
+          cat > /tmp/get_ip.py << 'PYEOF'
+          import boto3, os, sys
+          key_id = os.environ["QA_KEY_ID"].strip()
+          secret = os.environ["QA_SECRET"].strip()
+          token  = os.environ["QA_TOKEN"].strip()
+          session = boto3.Session(
+              aws_access_key_id=key_id,
+              aws_secret_access_key=secret,
+              aws_session_token=token,
+              region_name="us-east-1",
+          )
+          ec2 = session.client("ec2")
+          resp = ec2.describe_instances(
+              Filters=[
+                  {"Name": "tag:Name",            "Values": ["uce-nexus-qa-app-asg"]},
+                  {"Name": "instance-state-name", "Values": ["running"]},
+              ]
+          )
+          reservations = resp.get("Reservations", [])
+          if not reservations or not reservations[0]["Instances"]:
+              print("ERROR: no running instance found", file=sys.stderr)
+              sys.exit(1)
+          print(reservations[0]["Instances"][0]["PrivateIpAddress"])
+          PYEOF
+
+          APP_IP=$(python3 /tmp/get_ip.py)
+          echo "App Server IP: $APP_IP"
+          echo "APP_PRIVATE_IP=$APP_IP" >> $GITHUB_ENV
+
+      - name: Generate SSH Config file
+        run: |
+          # Crear el archivo de configuración SSH con salto (ProxyJump)
+          cat <<EOF > ~/.ssh/config
+          Host bastion
+            HostName ${BASTION_IP}
+            User ubuntu
+            IdentityFile ~/.ssh/id_rsa
+            StrictHostKeyChecking no
+            ControlMaster auto
+            ControlPath ~/.ssh/ansible-%r@%h:%p
+            ControlPersist 5m
+
+          Host app-server
+            HostName ${APP_PRIVATE_IP}
+            User ubuntu
+            IdentityFile ~/.ssh/id_rsa
+            ProxyJump bastion
+            StrictHostKeyChecking no
+
+          Host db-server
+            HostName ${DB_PRIVATE_IP}
+            User ubuntu
+            IdentityFile ~/.ssh/id_rsa
+            ProxyJump bastion
+            StrictHostKeyChecking no
+          EOF
+
+      # ==========================================
+      # 2. Diagnóstico de Conexión y Secretos
+      # ==========================================
+      - name: Test SSH Connection and Secrets
+        run: |
+          echo "==== DIAGNOSTIC SSH CONNECTION TEST ===="
+          echo "Target Environment: ${DEPLOY_ENV}"
+          
+          # Verificar si las variables están vacías
+          if [ -z "${BASTION_IP}" ]; then
+            echo "❌ ERROR: BASTION_IP is empty."
+            exit 1
+          fi
+          if [ -z "${APP_PRIVATE_IP}" ]; then
+            echo "❌ ERROR: APP_PRIVATE_IP is empty."
+            exit 1
+          fi
+          if [ -z "${DB_PRIVATE_IP}" ]; then
+            echo "❌ ERROR: DB_PRIVATE_IP is empty."
+            exit 1
+          fi
+          
+          echo "Testing connection to Bastion (${BASTION_IP}) on port 22..."
+          nc -zv -w 5 ${BASTION_IP} 22 || echo "⚠️ Warning: Cannot reach Bastion on port 22."
+          
+          echo "Testing SSH connection through Bastion to App Server..."
+          ssh -o ConnectTimeout=10 app-server "echo 'SSH connection via Bastion Jump to App Server is working!'"
+          
+          echo "Testing SSH connection through Bastion to DB Server..."
+          ssh -o ConnectTimeout=10 db-server "echo 'SSH connection via Bastion Jump to DB Server is working!'"
+
+      # ==========================================
+      # 3. Preparar Directorios en los Servidores
+      # ==========================================
+      - name: Create Remote Deploy Directories
+        run: |
+          ssh app-server "mkdir -p /home/ubuntu/app"
+          ssh db-server "mkdir -p /home/ubuntu/app"
+
+      # ==========================================
+      # 4. Transferir y Desplegar Bases de Datos en DB Server
+      # ==========================================
+      - name: Deploy Databases on DB Server
+        run: |
+          # Copiar compose de DB
+          scp infra/docker/docker-compose.db.yml db-server:/home/ubuntu/app/docker-compose.db.yml
+          
+          # Iniciar servicios de DB
+          ssh db-server "
+            cd /home/ubuntu/app && \
+            docker-compose -f docker-compose.db.yml down --remove-orphans 2>/dev/null || true && \
+            docker-compose -f docker-compose.db.yml pull && \
+            docker-compose -f docker-compose.db.yml up -d
+          "
+
+      # ==========================================
+      # 5. Transferir y Desplegar Aplicación en App Server
+      # ==========================================
+      - name: Deploy App Containers on App Server
+        run: |
+          # Copiar compose de App
+          scp infra/docker/docker-compose.prod.yml app-server:/home/ubuntu/app/docker-compose.prod.yml
+          
+          # Autenticar Docker en App Server
+          ssh app-server "echo '${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}' | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin"
+          
+          # Bajar TODOS los contenedores primero para evitar KeyError: ContainerConfig en docker-compose v1
+          # (bug conocido al hacer force-recreate con imagenes BuildKit modernas)
+          ssh app-server "cd /home/ubuntu/app && docker-compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true"
+          
+          # Descargar y levantar microservicios
+          ssh app-server "
+            cd /home/ubuntu/app && \
+            DOCKER_HUB_USER=${{ secrets.DOCKER_HUB_USERNAME }} IMAGE_TAG=qa DB_PRIVATE_IP=${{ env.DB_PRIVATE_IP }} docker-compose -f docker-compose.prod.yml pull && \
+            DOCKER_HUB_USER=${{ secrets.DOCKER_HUB_USERNAME }} IMAGE_TAG=qa DB_PRIVATE_IP=${{ env.DB_PRIVATE_IP }} docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+          "
+          
+          # Limpiar imágenes obsoletas
+          ssh app-server "docker image prune -f"
