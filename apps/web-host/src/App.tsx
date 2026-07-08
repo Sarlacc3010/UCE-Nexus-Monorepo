@@ -20,7 +20,8 @@ import {
   LogOut,
   Globe,
   ChevronDown,
-  History
+  History,
+  Settings
 } from 'lucide-react'
 
 // Iconos SVG locales para Facebook e Instagram
@@ -44,6 +45,10 @@ const CampusApp = lazy(() => import('gateway/CampusApp'))
 const PaymentsApp = lazy(() => import('payments/PaymentsApp'))
 const ChatWidget = lazy(() => import('chatbot/ChatWidget'))
 import ErrorBoundary from './ErrorBoundary';
+import AuditLogsPanel from './AuditLogsPanel';
+import DashboardPanel from './DashboardPanel';
+import SystemManagementPanel from './SystemManagementPanel';
+import UserManagementPanel from './UserManagementPanel';
 
 // Comprobar si el token almacenado es válido y no está cerca de expirar (10 segundos de margen)
 const isTokenExpired = (jwtToken: string) => {
@@ -72,7 +77,9 @@ const getUserInfoFromToken = (jwtToken: string) => {
     // Obtener rol
     let role = 'Estudiante';
     const realmRoles = payload.roles || payload.realm_access?.roles || [];
-    if (realmRoles.includes('admin') || realmRoles.includes('ADMIN')) {
+    if (realmRoles.includes('superAdmin') || realmRoles.includes('SUPERADMIN')) {
+      role = 'Super Administrador';
+    } else if (realmRoles.includes('admin') || realmRoles.includes('ADMIN')) {
       role = 'Administrador';
     } else {
       const hasAdminRole = realmRoles.some((r: string) => r.toLowerCase().includes('admin'));
@@ -81,7 +88,7 @@ const getUserInfoFromToken = (jwtToken: string) => {
       }
     }
     
-    return { nombre, role };
+    return { nombre, role, rolesRaw: realmRoles };
   } catch {
     return { nombre: 'Usuario UCE', role: 'Estudiante' };
   }
@@ -151,8 +158,8 @@ function App() {
       eventos: 'maps',
       tercera_matricula: 'solicitudes',
       retiro: 'solicitudes',
-      dashboard: 'administracion',
-      academic_admin: 'administracion',
+      super_dashboard: 'administracion',
+      system_admin: 'administracion',
       users_admin: 'administracion',
       gateway: 'administracion',
     };
@@ -289,6 +296,14 @@ function App() {
       return <AcademicApp activeTab={activeTab} token={token} />;
     } else if (['aranceles', 'estacionamiento', 'historial_pagos'].includes(activeTab)) {
       return <PaymentsApp activeTab={activeTab} token={token} />;
+    } else if (activeTab === 'gateway') {
+      return <AuditLogsPanel token={token} />;
+    } else if (activeTab === 'super_dashboard') {
+      return <DashboardPanel token={token} />;
+    } else if (activeTab === 'system_admin') {
+      return <SystemManagementPanel token={token} />;
+    } else if (activeTab === 'users_admin') {
+      return <UserManagementPanel token={token} />;
     } else {
       return <CampusApp activeTab={activeTab} token={token} />;
     }
@@ -418,7 +433,7 @@ function App() {
                   Inicio
                 </button>
 
-                {userInfo.role === 'Administrador' && (
+                {(userInfo.role === 'Administrador' || userInfo.role === 'Super Administrador') && (
                   /* SIDEBAR PARA ADMINISTRADOR (DESPLEGABLE) */
                   <div className="nexus-nav-group">
                     <button className="nexus-nav-group-header" onClick={() => toggleGroup('administracion')}>
@@ -427,18 +442,18 @@ function App() {
                     </button>
                     <div className={`nexus-nav-group-content ${collapsedGroups.administracion ? 'collapsed' : ''}`}>
                       <button 
-                        onClick={() => setActiveTab('dashboard')} 
-                        className={`nexus-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('super_dashboard')} 
+                        className={`nexus-nav-item ${activeTab === 'super_dashboard' ? 'active' : ''}`}
                       >
                         <span className="nexus-nav-item-icon"><LayoutDashboard size={18} /></span>
-                        Dashboard
+                        Dashboard en vivo
                       </button>
                       <button 
-                        onClick={() => setActiveTab('academic_admin')} 
-                        className={`nexus-nav-item ${activeTab === 'academic_admin' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('system_admin')} 
+                        className={`nexus-nav-item ${activeTab === 'system_admin' ? 'active' : ''}`}
                       >
-                        <span className="nexus-nav-item-icon"><GraduationCap size={18} /></span>
-                        Gestión Académica
+                        <span className="nexus-nav-item-icon"><Settings size={18} /></span>
+                        Gestión del Sistema
                       </button>
                       <button 
                         onClick={() => setActiveTab('users_admin')} 
