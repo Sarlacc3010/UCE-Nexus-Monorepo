@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Award, CheckCircle, GraduationCap } from 'lucide-react';
+import { Award, CheckCircle, GraduationCap, Clock } from 'lucide-react';
 import './GradesModule.css';
 
 interface GradeBlock {
@@ -34,6 +34,7 @@ const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
   const [grades, setGrades] = useState<GradeBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState<string>('Todos');
 
   const studentId = getStudentIdFromToken(token);
 
@@ -71,11 +72,25 @@ const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
     return <div className="grades-error">{error}</div>;
   }
 
-  // Filtrar solo asignaturas aprobadas
-  const passedGrades = grades.filter(g => g.estado === 'APROBADO');
+  if (grades.length === 0) {
+    return (
+      <div className="grades-empty">
+        <GraduationCap size={48} className="empty-icon" />
+        <h3>Aún no hay calificaciones</h3>
+        <p>No tienes materias registradas en tu historial académico actual.</p>
+      </div>
+    );
+  }
 
-  // Agrupar por semestre
-  const groupedGrades = passedGrades.reduce((acc, curr) => {
+  // Get unique semesters, maintaining insertion order (which is usually chronological if backend sorts by ID or date)
+  const semesters = Array.from(new Set(grades.map(g => g.semester_name)));
+
+  const filteredGrades = selectedSemester === 'Todos' 
+    ? grades 
+    : grades.filter(g => g.semester_name === selectedSemester);
+
+  // Group by semester
+  const groupedGrades = filteredGrades.reduce((acc, curr) => {
     if (!acc[curr.semester_name]) {
       acc[curr.semester_name] = [];
     }
@@ -83,25 +98,28 @@ const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
     return acc;
   }, {} as Record<string, GradeBlock[]>);
 
-  if (passedGrades.length === 0) {
-    return (
-      <div className="grades-empty">
-        <GraduationCap size={48} className="empty-icon" />
-        <h3>Aún no hay calificaciones</h3>
-        <p>No tienes materias aprobadas registradas en tu historial académico actual.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="grades-container">
       <div className="grades-header">
         <div className="header-icon-wrapper">
           <Award size={28} className="header-icon" />
         </div>
-        <div>
+        <div className="header-text-content">
           <h2>Historial de Calificaciones</h2>
-          <p>Materias Aprobadas - Estudiante #{studentId}</p>
+          <p>Historial Completo - Estudiante #{studentId}</p>
+        </div>
+        
+        <div className="semester-filter">
+          <select 
+            value={selectedSemester} 
+            onChange={(e) => setSelectedSemester(e.target.value)}
+            className="semester-select"
+          >
+            <option value="Todos">Todos los Semestres</option>
+            {semesters.map(sem => (
+              <option key={sem} value={sem}>{sem}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -109,7 +127,7 @@ const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
         {Object.keys(groupedGrades).map(semester => (
           <div key={semester} className="semester-group">
             <h3 className="semester-title">
-              <CheckCircle size={18} className="check-icon"/> {semester}
+              <GraduationCap size={18} className="check-icon"/> {semester}
             </h3>
             
             <div className="grades-table-wrapper">
@@ -122,6 +140,7 @@ const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
                     <th className="text-center">Examen 1<br/><small>(10% / 2 pts)</small></th>
                     <th className="text-center">Examen Final<br/><small>(30% / 6 pts)</small></th>
                     <th className="text-center highlight-col">Promedio Total<br/><small>(100% / 20 pts)</small></th>
+                    <th className="text-center">Estado</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -133,6 +152,12 @@ const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
                       <td className="text-center">{grade.examen_hemisemestre || '0.00'}</td>
                       <td className="text-center">{grade.examen_final || '0.00'}</td>
                       <td className="text-center highlight-val"><strong>{grade.nota_total || '0.00'}</strong></td>
+                      <td className="text-center">
+                        <span className={`status-badge status-${grade.estado?.toLowerCase() || 'desconocido'}`}>
+                          {grade.estado === 'CURSANDO' ? <Clock size={12} className="status-icon" /> : <CheckCircle size={12} className="status-icon" />}
+                          {grade.estado || 'N/A'}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

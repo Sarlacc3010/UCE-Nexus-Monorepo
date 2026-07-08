@@ -42,6 +42,67 @@
   opacity: 0.9;
 }
 
+.header-text-content {
+  flex: 1;
+}
+
+.semester-filter {
+  margin-left: auto;
+}
+
+.semester-select {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  appearance: none;
+  min-width: 200px;
+}
+
+.semester-select option {
+  background: #1e40af;
+  color: white;
+}
+
+.semester-select:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.status-aprobado {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.status-cursando {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.status-desconocido {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
 /* Semesters */
 .grades-content {
   display: flex;
