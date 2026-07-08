@@ -132,12 +132,23 @@ const EnrolledScheduleModule: React.FC<{ token: string | null }> = ({ token }) =
                     const topPos = ((startH - 7) * 60) + startM;
                     const duration = ((endH - startH) * 60) + (endM - startM);
                     
-                    // Simple hash for consistent colors based on subject name
+                    // Curated vibrant modern color palette
+                    const colorPalette = [
+                      { bg: '#eff6ff', border: '#3b82f6', text: '#1e3a8a', labelBg: '#dbeafe' }, // Blue
+                      { bg: '#fdf4ff', border: '#d946ef', text: '#701a75', labelBg: '#fae8ff' }, // Fuchsia
+                      { bg: '#ecfdf5', border: '#10b981', text: '#064e3b', labelBg: '#d1fae5' }, // Emerald
+                      { bg: '#fffbeb', border: '#f59e0b', text: '#78350f', labelBg: '#fef3c7' }, // Amber
+                      { bg: '#fef2f2', border: '#ef4444', text: '#7f1d1d', labelBg: '#fee2e2' }, // Red
+                      { bg: '#f5f3ff', border: '#8b5cf6', text: '#4c1d95', labelBg: '#ede9fe' }, // Violet
+                      { bg: '#f0fdfa', border: '#14b8a6', text: '#134e4a', labelBg: '#ccfbf1' }, // Teal
+                    ];
+                    
                     let hash = 0;
                     for (let i = 0; i < block.subject_name.length; i++) {
                       hash = block.subject_name.charCodeAt(i) + ((hash << 5) - hash);
                     }
-                    const hue = Math.abs(hash) % 360;
+                    const colorIndex = Math.abs(hash) % colorPalette.length;
+                    const theme = colorPalette[colorIndex];
 
                     return (
                       <div 
@@ -146,14 +157,16 @@ const EnrolledScheduleModule: React.FC<{ token: string | null }> = ({ token }) =
                         style={{
                           top: `${topPos}px`,
                           height: `${duration}px`,
-                          backgroundColor: `hsla(${hue}, 70%, 50%, 0.1)`,
-                          borderLeft: `4px solid hsl(${hue}, 70%, 50%)`,
-                          color: `hsl(${hue}, 80%, 25%)`
+                          backgroundColor: theme.bg,
+                          borderColor: theme.border,
+                          color: theme.text
                         }}
                       >
                         <div className="class-subject">{block.subject_name}</div>
                         <div className="class-time">{block.hora_inicio.slice(0, 5)} - {block.hora_fin.slice(0, 5)}</div>
-                        <div className="class-room">{block.parallel_name}</div>
+                        <div className="class-room" style={{ backgroundColor: theme.labelBg, color: theme.text }}>
+                          {block.parallel_name}
+                        </div>
                       </div>
                     );
                   })}
