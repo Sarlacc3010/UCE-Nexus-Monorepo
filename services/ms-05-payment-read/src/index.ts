@@ -123,6 +123,37 @@ app.get('/api/payments/status/:paymentId', async (req: Request, res: Response): 
   }
 });
 
+app.get('/api/payments/stats', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const query = `
+      SELECT category, SUM(amount) as total
+      FROM payments
+      WHERE status = 'COMPLETED'
+      GROUP BY category
+    `;
+    const result = await pool.query(query);
+    
+    let aranceles = 0;
+    let parqueadero = 0;
+    
+    result.rows.forEach((row: any) => {
+      if (row.category === 'MATRICULA') {
+        aranceles = parseFloat(row.total || '0');
+      } else if (row.category === 'ESTACIONAMIENTO') {
+        parqueadero = parseFloat(row.total || '0');
+      }
+    });
+    
+    res.json({
+      aranceles,
+      parqueadero
+    });
+  } catch (error: any) {
+    console.error('Error fetching payments stats:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // Health Check
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', service: 'ms-05-payment-read' });

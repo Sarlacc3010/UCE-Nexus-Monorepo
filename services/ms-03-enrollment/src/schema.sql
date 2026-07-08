@@ -685,3 +685,45 @@ CREATE TABLE IF NOT EXISTS student_semester_status (
 
 CREATE INDEX IF NOT EXISTS idx_semester_status_student ON student_semester_status(student_id);
 CREATE INDEX IF NOT EXISTS idx_semester_status_lookup  ON student_semester_status(student_id, semester_id);
+
+-- ==========================================================
+-- SEED DATA FOR TESTING ENROLLMENTS, PAYMENTS AND GRADES
+-- ==========================================================
+
+-- Enrollments Seed
+INSERT INTO student_enrollments (student_id, parallel_id) VALUES
+(1, 23), -- Estructura de Datos (Nivel 3)
+(1, 25), -- Arquitectura de Computadores (Nivel 3)
+(4, 23), -- Carlos - Estructura de Datos
+(4, 25), -- Carlos - Arquitectura de Computadores
+(4, 29), -- Carlos - Interfaces de Usuario
+(6, 23), -- Juan - Estructura de Datos
+(6, 25), -- Juan - Arquitectura de Computadores
+(42, 23),
+(42, 25)
+ON CONFLICT (student_id, parallel_id) DO NOTHING;
+
+-- Semester Status Seed
+INSERT INTO student_semester_status (student_id, semester_id, status, needs_payment, payment_amount) VALUES
+(1, 3, 'MATRICULADO', false, 0.00),
+(4, 3, 'INSCRITO', true, 120.00), -- Carlos needs payment
+(6, 3, 'INSCRITO', true, 120.00), -- Juan needs payment
+(42, 3, 'MATRICULADO', false, 0.00)
+ON CONFLICT (student_id, semester_id) DO NOTHING;
+
+-- Grades Seed
+INSERT INTO grades (student_id, parallel_id, examen_hemisemestre, nota_individual, nota_grupal, examen_final, estado) VALUES
+-- Student 1
+(1, 23, 1.80, 6.20, 4.50, 5.00, 'APROBADO'),
+(1, 25, 1.50, 5.80, 4.00, 4.20, 'APROBADO'),
+-- Student 4
+(4, 23, 1.90, 6.50, 4.80, 5.20, 'APROBADO'),
+(4, 25, 1.70, 6.00, 4.20, 4.80, 'APROBADO'),
+(4, 29, 1.60, 5.50, 4.50, 4.90, 'APROBADO'),
+-- Student 6
+(6, 23, 1.20, 4.50, 3.80, 4.50, 'APROBADO'),
+(6, 25, 1.40, 5.00, 4.00, 4.20, 'APROBADO'),
+-- Student 42
+(42, 23, 1.85, 6.30, 4.60, 5.10, 'APROBADO'),
+(42, 25, 1.60, 5.95, 4.10, 4.50, 'APROBADO')
+ON CONFLICT (student_id, parallel_id) DO NOTHING;

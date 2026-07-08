@@ -92,6 +92,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       username: user.username,
       email: user.email,
       roles: user.roles || ['user'],
+      student_id: user.student_id,
       realm_access: {
         roles: user.roles || ['user']
       }

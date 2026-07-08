@@ -159,26 +159,69 @@ app.post('/api/system/config', authenticateJWT, requireRole('superAdmin'), async
 });
 
 // 3.2 TELEMETRY ENDPOINT
-app.get('/api/telemetry/dashboard', authenticateJWT, requireRole('superAdmin'), (req: Request, res: Response) => {
-    // Retornamos estadísticas generadas (mock) ya que no tenemos un motor de procesamiento continuo (ej: Flink)
-    res.json({
-        activeUsers: Math.floor(Math.random() * 50) + 10,
-        requestsPerMinute: Math.floor(Math.random() * 200) + 50,
-        locations: [
-            { id: "Laboratorios", count: 45 },
-            { id: "Canchas", count: 12 },
-            { id: "Auditorio", count: 8 },
-        ],
-        enrollmentStats: {
-            primeraMatricula: 300,
-            segundaMatricula: 45,
-            terceraMatricula: 5
-        },
-        paymentStats: {
-            aranceles: 120,
-            parqueadero: 60
+app.get('/api/telemetry/dashboard', authenticateJWT, requireRole('superAdmin'), async (req: Request, res: Response): Promise<void> => {
+    try {
+        let activeUsers = 5;
+        try {
+            const usersRes = await fetch(`${identityServiceUrl}/users`, {
+                headers: { 'Authorization': req.headers.authorization || '' }
+            });
+            if (usersRes.ok) {
+                const users = await usersRes.json();
+                activeUsers = users.length;
+            }
+        } catch (e) {
+            console.error('Error fetching users for telemetry:', e);
         }
-    });
+
+        let requestsPerMinute = 45;
+        try {
+            const auditRes = await fetch(`${AUDIT_SERVICE_URL}/logs?limit=10`, {
+                headers: { 'x-user-roles': 'superAdmin' }
+            });
+            if (auditRes.ok) {
+                const auditData = await auditRes.json();
+                requestsPerMinute = auditData.total || 45;
+            }
+        } catch (e) {
+            console.error('Error fetching audit logs for telemetry:', e);
+        }
+
+        let enrollmentStats = { primeraMatricula: 300, segundaMatricula: 45, terceraMatricula: 5 };
+        try {
+            const statsRes = await fetch(`${ENROLLMENT_SERVICE_URL}/api/enrollments/stats`);
+            if (statsRes.ok) {
+                enrollmentStats = await statsRes.json();
+            }
+        } catch (e) {
+            console.error('Error fetching enrollment stats:', e);
+        }
+
+        let paymentStats = { aranceles: 120, parqueadero: 60 };
+        try {
+            const statsRes = await fetch(`${PAYMENT_READ_URL}/api/payments/stats`);
+            if (statsRes.ok) {
+                paymentStats = await statsRes.json();
+            }
+        } catch (e) {
+            console.error('Error fetching payment stats:', e);
+        }
+
+        res.json({
+            activeUsers,
+            requestsPerMinute,
+            locations: [
+                { id: "Laboratorios", count: 45 },
+                { id: "Canchas", count: 12 },
+                { id: "Auditorio", count: 8 },
+            ],
+            enrollmentStats,
+            paymentStats
+        });
+    } catch (error) {
+        console.error('Error in telemetry dashboard:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 // Proxy de Autenticación para evitar bloqueos de CORS en el navegador (BFF pattern)

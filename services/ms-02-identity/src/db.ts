@@ -34,7 +34,8 @@ export const initDb = async () => {
       ALTER TABLE users 
       ADD COLUMN IF NOT EXISTS cedula VARCHAR(10) UNIQUE,
       ADD COLUMN IF NOT EXISTS personal_email VARCHAR(100),
-      ADD COLUMN IF NOT EXISTS career VARCHAR(100);
+      ADD COLUMN IF NOT EXISTS career VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS student_id SERIAL;
     `);
     
     console.log('✅ Users table is ready.');
