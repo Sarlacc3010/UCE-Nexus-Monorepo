@@ -12,8 +12,46 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger';
 import logger from './logger';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import { Kafka } from 'kafkajs';
 
 dotenv.config();
+
+// 0. Kafka Setup
+const kafka = new Kafka({
+  clientId: 'ms-01-gateway',
+  brokers: [process.env.KAFKA_BROKERS || 'localhost:9092'],
+});
+const producer = kafka.producer();
+producer.connect().then(() => logger.info('✅ Gateway connected to Kafka')).catch(e => logger.error('❌ Gateway Kafka connection failed', e));
+
+const emitAuditEvent = async (action: string, details: any) => {
+  try {
+    await producer.send({
+      topic: 'audit_events',
+      messages: [{ value: JSON.stringify({ service: 'ms-01-gateway', action, details, timestamp: new Date().toISOString() }) }],
+    });
+  } catch (error) {
+    logger.error('⚠️ Failed to emit gateway audit event:', error);
+  }
+};
+
+// 0.1 Feature Toggles State (In-Memory for simplicity, could use Redis)
+let systemConfig: Record<string, boolean> = {
+  enrollment: true,
+  payments: true,
+  requests: true,
+  booking: true
+};
+
+const checkFeatureToggle = (moduleName: string) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (systemConfig[moduleName] === false) {
+      res.status(503).json({ error: `El módulo de ${moduleName} se encuentra en mantenimiento.` });
+      return;
+    }
+    next();
+  };
+};
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,12 +60,12 @@ app.use(cors());
 
 // Proxy para ms-02-identity (Debe ir ANTES de express.json para evitar que el body parser consuma el stream y rompa el proxy en POST)
 const identityServiceUrl = process.env.IDENTITY_SERVICE_URL || 'http://localhost:4002';
-app.use('/api/identity', createProxyMiddleware({ target: identityServiceUrl, changeOrigin: true }));
+app.use('/api/identity', createProxyMiddleware({ target: identityServiceUrl, changeOrigin: true }) as any);
 
 app.use(express.json());
 
 // Documentación Swagger
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve as any, swaggerUi.setup(swaggerSpec) as any);
 
 
 
@@ -93,6 +131,97 @@ app.get('/health', (req: Request, res: Response) => {
     res.json({
         status: 'API Gateway Operativo', gateway: 'MS-01', ambiente: process.env.NODE_ENV || 'local'
     });
+});
+
+// 3.1 CONFIGURATION ENDPOINTS (SuperAdmin)
+/**
+ * @swagger
+ * /api/system/config:
+ *   get:
+ *     summary: Obtener el estado actual de los módulos
+ */
+app.get('/api/system/config', (req: Request, res: Response) => {
+    res.json(systemConfig);
+});
+
+/**
+ * @swagger
+ * /api/system/config:
+ *   post:
+ *     summary: Cambiar el estado de los módulos
+ */
+app.post('/api/system/config', authenticateJWT, requireRole('superAdmin'), async (req: Request, res: Response) => {
+    const changes = req.body;
+    systemConfig = { ...systemConfig, ...changes };
+    const user = (req as any).user;
+    await emitAuditEvent('SYSTEM_TOGGLED', { admin: user.username, changes, current_config: systemConfig });
+    res.json({ message: 'Configuración actualizada exitosamente', config: systemConfig });
+});
+
+// 3.2 TELEMETRY ENDPOINT
+app.get('/api/telemetry/dashboard', authenticateJWT, requireRole('superAdmin'), async (req: Request, res: Response): Promise<void> => {
+    try {
+        let activeUsers = 5;
+        try {
+            const usersRes = await fetch(`${identityServiceUrl}/users`, {
+                headers: { 'Authorization': req.headers.authorization || '' }
+            });
+            if (usersRes.ok) {
+                const users = await usersRes.json();
+                activeUsers = users.length;
+            }
+        } catch (e) {
+            console.error('Error fetching users for telemetry:', e);
+        }
+
+        let requestsPerMinute = 45;
+        try {
+            const auditRes = await fetch(`${AUDIT_SERVICE_URL}/logs?limit=10`, {
+                headers: { 'x-user-roles': 'superAdmin' }
+            });
+            if (auditRes.ok) {
+                const auditData = await auditRes.json();
+                requestsPerMinute = auditData.total || 45;
+            }
+        } catch (e) {
+            console.error('Error fetching audit logs for telemetry:', e);
+        }
+
+        let enrollmentStats = { primeraMatricula: 300, segundaMatricula: 45, terceraMatricula: 5 };
+        try {
+            const statsRes = await fetch(`${ENROLLMENT_SERVICE_URL}/api/enrollments/stats`);
+            if (statsRes.ok) {
+                enrollmentStats = await statsRes.json();
+            }
+        } catch (e) {
+            console.error('Error fetching enrollment stats:', e);
+        }
+
+        let paymentStats = { aranceles: 120, parqueadero: 60 };
+        try {
+            const statsRes = await fetch(`${PAYMENT_READ_URL}/api/payments/stats`);
+            if (statsRes.ok) {
+                paymentStats = await statsRes.json();
+            }
+        } catch (e) {
+            console.error('Error fetching payment stats:', e);
+        }
+
+        res.json({
+            activeUsers,
+            requestsPerMinute,
+            locations: [
+                { id: "Laboratorios", count: 45 },
+                { id: "Canchas", count: 12 },
+                { id: "Auditorio", count: 8 },
+            ],
+            enrollmentStats,
+            paymentStats
+        });
+    } catch (error) {
+        console.error('Error in telemetry dashboard:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 // Proxy de Autenticación para evitar bloqueos de CORS en el navegador (BFF pattern)
@@ -169,7 +298,7 @@ app.post('/api/refresh', async (req: Request, res: Response): Promise<void> => {
  *       403:
  *         description: No autorizado
  */
-app.post('/api/reservas', authenticateJWT, requireRole('user'), (req: Request, res: Response) => {
+app.post('/api/reservas', authenticateJWT, (req: Request, res: Response) => {
     const decoded = (req as any).user;
     
     // Extrae el ID de usuario desde el token decodificado de identidad (email, username o sub)
@@ -179,7 +308,10 @@ app.post('/api/reservas', authenticateJWT, requireRole('user'), (req: Request, r
         user_id: userId,
         resource_type: req.body.resource_type || "Laboratorio",
         resource_id: req.body.resource_id || "LAB-Cisco-01",
-        date: req.body.date || new Date().toISOString()
+        date: req.body.date || new Date().toISOString(),
+        end_time: req.body.end_time || "",
+        subject_id: req.body.subject_id || "",
+        reason: req.body.reason || ""
     };
 
     bookingClient.CreateBooking(grpcRequest, (err: any, response: any) => {
@@ -203,8 +335,15 @@ app.post('/api/reservas', authenticateJWT, requireRole('user'), (req: Request, r
 // ─── Enrollment Service (MS-03) Proxy ────────────────────────────────────────
 const ENROLLMENT_SERVICE_URL = process.env.ENROLLMENT_SERVICE_URL || 'http://localhost:3001';
 
-app.use('/api/academic', async (req: Request, res: Response): Promise<void> => {
+app.use('/api/academic', checkFeatureToggle('enrollment'), async (req: Request, res: Response): Promise<void> => {
     try {
+        if (req.headers.authorization && req.method === 'GET') {
+           const token = req.headers.authorization.split(' ')[1];
+           if (token) {
+               const decoded: any = jwt.decode(token);
+               if (decoded) emitAuditEvent('MODULE_ACCESSED', { user: decoded.username, module: 'academic', path: req.originalUrl });
+           }
+        }
         const targetUrl = `${ENROLLMENT_SERVICE_URL}${req.originalUrl.replace('/api/academic', '/api')}`;
         
         const headers: Record<string, string> = {};
@@ -244,8 +383,15 @@ app.use('/api/academic', async (req: Request, res: Response): Promise<void> => {
 const PAYMENT_WRITE_URL = process.env.PAYMENT_WRITE_URL || 'http://localhost:4004';
 const PAYMENT_READ_URL = process.env.PAYMENT_READ_URL || 'http://localhost:4005';
 
-app.use('/api/payments', async (req: Request, res: Response): Promise<void> => {
+app.use('/api/payments', checkFeatureToggle('payments'), async (req: Request, res: Response): Promise<void> => {
     try {
+        if (req.headers.authorization && req.method === 'GET') {
+           const token = req.headers.authorization.split(' ')[1];
+           if (token) {
+               const decoded: any = jwt.decode(token);
+               if (decoded) emitAuditEvent('MODULE_ACCESSED', { user: decoded.username, module: 'payments', path: req.originalUrl });
+           }
+        }
         // Enrutar según la ruta del request
         // Intentos y confirmación de escritura a ms-04
         // Historial y estatus a ms-05
@@ -387,8 +533,48 @@ const geocampusProxy = createProxyMiddleware({
     }
 });
 
-app.use('/api/geocampus', geocampusProxy);
-app.use('/ws/geocampus', geocampusProxy);
+app.use('/api/geocampus', geocampusProxy as any);
+app.use('/ws/geocampus', geocampusProxy as any);
+
+// ─── Audit Service (MS-10) Proxy ─────────────────────────────────────────
+const AUDIT_SERVICE_URL = process.env.AUDIT_SERVICE_URL || 'http://localhost:4010';
+
+app.use('/api/audit', authenticateJWT, async (req: Request, res: Response): Promise<void> => {
+    try {
+        const user = (req as any).user;
+        const roles = user?.roles || [];
+        
+        const targetUrl = `${AUDIT_SERVICE_URL}${req.originalUrl.replace('/api/audit', '')}`;
+        
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'x-user-roles': roles.join(',')
+        };
+
+        const fetchOptions: RequestInit = {
+            method: req.method,
+            headers,
+        };
+
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+            fetchOptions.body = JSON.stringify(req.body);
+        }
+
+        const response = await fetch(targetUrl, fetchOptions);
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            res.status(response.status).json(data);
+        } else {
+            const data = await response.text();
+            res.status(response.status).send(data);
+        }
+    } catch (error: any) {
+        logger.error(`Error proxying to audit service (${req.method} ${req.originalUrl}):`, error);
+        res.status(503).json({ error: 'El servicio de auditoría no está disponible.' });
+    }
+});
 
 if (process.env.NODE_ENV !== 'test') {
     const server = app.listen(PORT, () => {

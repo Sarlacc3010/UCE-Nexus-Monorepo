@@ -24,6 +24,7 @@ services:
       - GEOCAMPUS_SERVICE_URL=http://ms-09-geocampus:8009
       - PAYMENT_WRITE_URL=http://ms-04-payment-write:4004
       - PAYMENT_READ_URL=http://ms-05-payment-read:4005
+      - AUDIT_SERVICE_URL=http://ms-10-audit:4010
     depends_on:
       - ms-02-identity
       - ms-06-booking
@@ -46,20 +47,12 @@ services:
       - PORT=50051
       - ENV=development
       - REDIS_ADDR=redis-cache:6379
-      - DB_HOST=postgres-app
-      - DB_PORT=5432
-      - DB_USER=uce
-      - DB_PASSWORD=password
-      - DB_NAME=uce_nexus_dev
-      - MONGO_URI=mongodb://admin:password@mongodb:27017/
-      - KAFKA_BROKERS=kafka:29092
       - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672/
+      - DATABASE_URL=postgres://booking_user:booking_password@postgres-booking:5432/uce_booking_dev?sslmode=disable
     depends_on:
-      - postgres-app
-      - mongodb
       - redis-cache
-      - kafka
       - rabbitmq
+      - postgres-booking
     networks:
       - nexus-network
 
@@ -167,6 +160,25 @@ services:
     networks:
       - nexus-network
 
+  # MS-10: Audit Service (Node.js/TypeScript)
+  ms-10-audit:
+    build:
+      context: ../../services/ms-10-audit
+      dockerfile: Dockerfile
+    container_name: nexus-ms-10-audit
+    restart: unless-stopped
+    ports:
+      - "4010:4010"
+    environment:
+      - PORT=4010
+      - MONGO_URI=mongodb://admin:password@mongodb:27017/
+      - KAFKA_BROKERS=kafka:29092
+    depends_on:
+      - mongodb
+      - kafka
+    networks:
+      - nexus-network
+
   # ==========================================
   # 2. SEGURIDAD E IDENTIDAD (Keycloak)
   # ==========================================
@@ -203,6 +215,7 @@ services:
       - NODE_ENV=development
       - DATABASE_URL=postgres://keycloak:password@postgres-iam:5432/keycloak
       - JWT_SECRET=${JWT_SECRET}
+      - KAFKA_BROKERS=kafka:29092
     depends_on:
       - postgres-iam
     networks:
@@ -270,6 +283,21 @@ services:
       - "5435:5432"
     networks:
       - nexus-network
+
+  # PostgreSQL - Reservas / Booking
+  postgres-booking:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: booking_user
+      POSTGRES_PASSWORD: booking_password
+      POSTGRES_DB: uce_booking_dev
+    volumes:
+      - pg-booking-data:/var/lib/postgresql/data
+    networks:
+      - nexus-network
+    ports:
+      - "5436:5432"
 
   mongodb:
     image: mongo:7.0
@@ -355,7 +383,7 @@ services:
   ms-04-payment-write:
     build:
       context: ../../services/ms-04-payment-write
-      dockerfile: dockerfile
+      dockerfile: Dockerfile
     image: docker-ms-04-payment-write:latest
     container_name: nexus-ms-04-payment-write
     restart: unless-stopped
@@ -377,9 +405,10 @@ services:
   ms-05-payment-read:
     build:
       context: ../../services/ms-05-payment-read
-      dockerfile: dockerfile
+      dockerfile: Dockerfile
     image: docker-ms-05-payment-read:latest
     container_name: nexus-ms-05-payment-read
+
     restart: unless-stopped
     ports:
       - "4005:4005"
@@ -425,6 +454,8 @@ volumes:
   pg-enrollment-data:
     driver: local
   pg-geocampus-data:
+    driver: local
+  pg-booking-data:
     driver: local
   mongo-data:
     driver: local

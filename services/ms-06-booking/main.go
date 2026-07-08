@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -12,6 +13,7 @@ import (
 	pb "uce-nexus/ms-06-booking/pb"
 
 	"github.com/go-redis/redis/v8"
+	_ "github.com/lib/pq"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -19,6 +21,7 @@ import (
 
 // Variable global para nuestro cliente de Redis
 var rdb *redis.Client
+var db *sql.DB
 
 // Variables globales para RabbitMQ
 var mqConn *amqp.Connection
@@ -57,10 +60,31 @@ func (s *server) CreateBooking(ctx context.Context, req *pb.BookingRequest) (*pb
 
 	slog.Info("Lock adquirido exitosamente", "resource_id", req.GetResourceId())
 
-	// 4. Simulamos el tiempo de procesamiento (escritura en base de datos, validaciones, etc.)
-	time.Sleep(3 * time.Second)
+	var bookingID int
+	query := `
+		INSERT INTO reservations (user_id, resource_type, resource_id, start_date, end_time, subject_id, reason, status)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id
+	`
+	err = db.QueryRowContext(ctx, query, 
+		req.GetUserId(), 
+		req.GetResourceType(), 
+		req.GetResourceId(), 
+		req.GetDate(), 
+		req.GetEndTime(), 
+		req.GetSubjectId(), 
+		req.GetReason(), 
+		"CONFIRMED",
+	).Scan(&bookingID)
 
-	slog.Info("Reserva confirmada en base de datos. Liberando Lock...")
+	if err != nil {
+		slog.Error("Error al guardar reserva en BD", "error", err)
+		rdb.Del(ctx, lockKey)
+		return nil, fmt.Errorf("error al procesar reserva")
+	}
+
+	generatedBookingID := fmt.Sprintf("BKG-%d", bookingID)
+	slog.Info("Reserva confirmada en base de datos. Liberando Lock...", "booking_id", generatedBookingID)
 
 	// 5. Liberamos el Lock para que otros puedan usar el recurso
 	rdb.Del(ctx, lockKey)
@@ -75,7 +99,7 @@ func (s *server) CreateBooking(ctx context.Context, req *pb.BookingRequest) (*pb
 	}
 
 	event := BookingEvent{
-		BookingID:    "BKG-777",
+		BookingID:    generatedBookingID,
 		UserID:       req.GetUserId(),
 		ResourceType: req.GetResourceType(),
 		ResourceID:   req.GetResourceId(),
@@ -107,9 +131,52 @@ func (s *server) CreateBooking(ctx context.Context, req *pb.BookingRequest) (*pb
 
 	return &pb.BookingResponse{
 		Success:   true,
-		Message:   "¡Reserva procesada exitosamente con control de concurrencia!",
-		BookingId: "BKG-777",
+		Message:   "¡Reserva procesada exitosamente con control de concurrencia y persistencia!",
+		BookingId: generatedBookingID,
 	}, nil
+}
+
+func initDB() {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://booking_user:booking_password@localhost:5435/uce_booking_dev?sslmode=disable"
+	}
+	var err error
+	for i := 0; i < 5; i++ {
+		db, err = sql.Open("postgres", dbURL)
+		if err == nil {
+			err = db.Ping()
+			if err == nil {
+				break
+			}
+		}
+		slog.Warn("No se pudo conectar a PostgreSQL", "intento", i+1, "error", err)
+		time.Sleep(3 * time.Second)
+	}
+	if err != nil {
+		slog.Error("Error fatal: No se pudo conectar a PostgreSQL", "error", err)
+		os.Exit(1)
+	}
+
+	createTableQuery := `
+	CREATE TABLE IF NOT EXISTS reservations (
+		id SERIAL PRIMARY KEY,
+		user_id VARCHAR(100) NOT NULL,
+		resource_type VARCHAR(50) NOT NULL,
+		resource_id VARCHAR(50) NOT NULL,
+		start_date VARCHAR(50) NOT NULL,
+		end_time VARCHAR(50),
+		subject_id VARCHAR(50),
+		reason TEXT,
+		status VARCHAR(20) DEFAULT 'PENDING',
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);`
+	_, err = db.Exec(createTableQuery)
+	if err != nil {
+		slog.Error("Error al crear tabla reservations", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("Conexión a PostgreSQL establecida y tabla verificada")
 }
 
 func initRabbitMQ() {
@@ -175,7 +242,8 @@ func main() {
 	}
 	slog.Info("Conexión a Redis establecida exitosamente")
 
-	// Inicializamos RabbitMQ
+	// Inicializamos Base de Datos y RabbitMQ
+	initDB()
 	initRabbitMQ()
 	defer func() {
 		if mqChannel != nil {
