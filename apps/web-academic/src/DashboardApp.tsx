@@ -3,15 +3,12 @@ import { useQuery } from '@tanstack/react-query';
 import { gsap } from 'gsap';
 import { BookOpen, Calendar, Clock, GraduationCap, LayoutDashboard } from 'lucide-react';
 import { withQueryProvider } from './QueryProvider';
+import {
+  fetchAcademicStatus, getStudentIdFromToken, getStudentNameFromToken,
+  getSemesterText, REGULARITY_LABEL
+} from './lib/academicStatus';
+import type { AcademicStatus } from './lib/academicStatus';
 import './DashboardApp.css';
-
-interface Enrollment {
-  id: number;
-  name: string;
-  subject_id: number;
-  subject_name: string;
-  semester_name: string;
-}
 
 interface Schedule {
   id: number;
@@ -24,59 +21,19 @@ interface Schedule {
   subject_name: string;
 }
 
-const getStudentIdFromToken = (token: string): number => {
-  if (!token) return 4; // Default pilot ID
-  try {
-    const parts = token.split('.');
-    if (parts.length === 3) {
-      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-      if (payload.student_id !== undefined && payload.student_id !== null) {
-        return parseInt(payload.student_id, 10);
-      }
-      const username = payload.preferred_username || payload.username || '';
-      
-      if (username.includes('carlos')) return 4;
-      if (username.includes('juan')) return 6;
-      if (username.includes('student') || username.includes('estudiante') || username.includes('navarrete') || username.includes('abel')) {
-        const match = username.match(/\d+/);
-        if (match) return parseInt(match[0], 10);
-      }
-    }
-  } catch (err) {
-    console.error('Error parsing token for student ID:', err);
-  }
-  return 4; // Fallback to pilot student ID
-};
-
-const getStudentNameFromToken = (token: string): string => {
-  if (!token) return 'Carlos Estudiante';
-  try {
-    const parts = token.split('.');
-    if (parts.length === 3) {
-      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-      return payload.name || `${payload.given_name || ''} ${payload.family_name || ''}`.trim() || 'Carlos Estudiante';
-    }
-  } catch (err) {
-    console.error('Error parsing token for name:', err);
-  }
-  return 'Carlos Estudiante';
-};
-
 const API_URL = import.meta.env.PROD ? '' : 'http://localhost:3000';
 
 function DashboardApp() {
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   const token = localStorage.getItem('uce_token') || '';
   const studentId = getStudentIdFromToken(token);
   const studentName = getStudentNameFromToken(token);
 
-  // Consultar las materias matriculadas del estudiante actual de forma dinámica
-  // Eliminado: ahora usamos activeEnrollments derivado de grades
-
   // Consultar todos los horarios de clase programados en los laboratorios (específico del estudiante)
   const { data: schedules, isLoading: loadingSchedules } = useQuery<Schedule[]>({
     queryKey: ['student-schedules', studentId],
+    enabled: !!studentId,
     queryFn: async () => {
       const res = await fetch(`${API_URL}/api/academic/students/${studentId}/schedules`);
       if (!res.ok) throw new Error('Error al obtener horarios');
@@ -84,15 +41,16 @@ function DashboardApp() {
     }
   });
 
-  // Consultar notas reales del estudiante en la base de datos
-  const { data: grades, isLoading: loadingGrades } = useQuery<any[]>({
-    queryKey: ['student-grades', studentId],
-    queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/academic/students/${studentId}/grades`);
-      if (!res.ok) throw new Error('Error al obtener notas');
-      return res.json();
-    }
+  // Estado académico consolidado: semestre(s) actual(es), regular/irregular, y malla
+  // completa con el estado real de cada materia (aprobado/matriculado/pendiente/reprobado).
+  // Misma fuente que usan los módulos de Calificaciones y Horario.
+  const { data: status, isLoading: loadingStatus } = useQuery<AcademicStatus>({
+    queryKey: ['student-academic-status', studentId],
+    enabled: !!studentId,
+    queryFn: () => fetchAcademicStatus(studentId as number, token)
   });
+
+  const loadingGrades = loadingStatus;
 
   // Animaciones GSAP al cargar el panel
   useEffect(() => {
@@ -106,7 +64,7 @@ function DashboardApp() {
           duration: 0.8,
           ease: 'power3.out',
         });
-        
+
         // Animación de los items de la lista
         gsap.from('.schedule-item, .subject-pill', {
           opacity: 0,
@@ -122,66 +80,71 @@ function DashboardApp() {
     }
   }, [loadingSchedules, loadingGrades]);
 
-  // Derived values from grades
-  const activeEnrollments = useMemo(() => {
-    if (!grades) return [];
-    return grades.filter((g: any) => g.estado === 'CURSANDO');
-  }, [grades]);
+  const allSubjects = useMemo(() => status?.semesters.flatMap(s => s.subjects) ?? [], [status]);
 
-  const completedGrades = useMemo(() => {
-    if (!grades) return [];
-    return grades.filter((g: any) => g.estado === 'APROBADO');
-  }, [grades]);
+  const activeEnrollments = useMemo(
+    () => allSubjects.filter(s => s.estado === 'MATRICULADO'),
+    [allSubjects]
+  );
 
-  // Derive current semester from active enrollments or default to 2
-  const currentSemesterLevel = useMemo(() => {
-    if (activeEnrollments.length > 0) {
-      // Just a naive mapping from semester_name to level. A more robust way would be mapping names.
-      const firstActive = activeEnrollments[0].semester_name;
-      const levels: Record<string, number> = {
-        'Primer Semestre': 1, 'Segundo Semestre': 2, 'Tercer Semestre': 3, 'Cuarto Semestre': 4,
-        'Quinto Semestre': 5, 'Sexto Semestre': 6, 'Séptimo Semestre': 7, 'Octavo Semestre': 8,
-        'Noveno Semestre': 9, 'Décimo Semestre': 10
-      };
-      return levels[firstActive] || 8;
+  const completedGrades = useMemo(
+    () => allSubjects.filter(s => s.estado === 'APROBADO'),
+    [allSubjects]
+  );
+
+  // Semestre actual real: el semestre pendiente más bajo, calculado en el backend
+  // a partir del historial de notas comparado contra la malla curricular.
+  const currentSemesterLevel = status?.mandatory_level ?? null;
+  const regularity = status?.regularity ?? null;
+
+  const semesterHeaderText = useMemo(() => {
+    if (!status) return '';
+    if (status.regularity === 'EGRESADO') return 'Egresado';
+    if (!currentSemesterLevel) return '';
+    const base = getSemesterText(currentSemesterLevel);
+    if (status.regularity === 'IRREGULAR' && status.optional_level) {
+      return `${base} (obligatorio) + ${getSemesterText(status.optional_level)} (opcional)`;
     }
-    return 8;
-  }, [activeEnrollments]);
-
-  const getSemesterText = (level: number) => {
-    const texts = [
-      '1er Semestre', '2do Semestre', '3er Semestre', '4to Semestre', '5to Semestre',
-      '6to Semestre', '7mo Semestre', '8vo Semestre', '9no Semestre', '10mo Semestre'
-    ];
-    return texts[level - 1] || 'Octavo Semestre';
-  };
+    return base;
+  }, [status, currentSemesterLevel]);
 
   // Promedio dinámico y real en base a calificaciones de la base de datos
   const averageScore = useMemo(() => {
     if (!completedGrades || completedGrades.length === 0) {
-      return (8.0 + (studentId % 15) / 10).toFixed(2); // fallback determinista
+      return (8.0 + ((studentId ?? 0) % 15) / 10).toFixed(2); // fallback determinista
     }
-    
+
     let totalScore = 0;
-    
-    completedGrades.forEach((g: any) => {
+
+    completedGrades.forEach((g) => {
       totalScore += parseFloat(g.nota_total || '0');
     });
-    
+
     return (totalScore / completedGrades.length).toFixed(2);
   }, [completedGrades, studentId]);
 
   const progressBarWidth = `${parseFloat(averageScore) * 10}%`;
 
+  const totalCurriculum = status?.total_curriculum_count || 59;
   const enrolledCount = activeEnrollments.length;
   const completedCount = completedGrades.length;
-  const pendingCount = Math.max(0, 53 - completedCount - enrolledCount);
+  const pendingCount = Math.max(0, totalCurriculum - completedCount - enrolledCount);
 
   const progressData = [
     { name: 'Aprobadas', value: completedCount, color: '#10b981' }, // Verde Esmeralda
     { name: 'En Curso', value: enrolledCount, color: '#3b82f6' },    // Azul
     { name: 'Pendientes', value: pendingCount, color: '#1e293b' },   // Slate Oscuro
   ];
+
+  if (!studentId) {
+    return (
+      <div className="dashboard-container animate-fade-in">
+        <div className="empty-state">
+          No se pudo identificar al estudiante desde la sesión actual. Vuelve a iniciar sesión.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container animate-fade-in" id="academic-panel" ref={containerRef}>
@@ -190,14 +153,22 @@ function DashboardApp() {
         <div className="welcome-avatar">🎓</div>
         <div>
           <h1 className="welcome-title">Portal Académico Nexus</h1>
-          <p className="welcome-subtitle">Bienvenido de vuelta, <strong>{studentName}</strong> (Ingeniería en Sistemas | {getSemesterText(currentSemesterLevel)})</p>
+          <p className="welcome-subtitle">
+            Bienvenido de vuelta, <strong>{studentName}</strong> (Sistemas de Información
+            {semesterHeaderText && ` | ${semesterHeaderText}`})
+          </p>
+          {regularity && (
+            <span className={`regularity-tag regularity-${regularity.toLowerCase()}`}>
+              {REGULARITY_LABEL[regularity]}
+            </span>
+          )}
         </div>
       </header>
 
       <div className="dashboard-grid">
         {/* COLUMNA IZQUIERDA: Horarios y Carga Académica */}
         <div className="dashboard-col-left">
-          
+
           {/* Horario de Clases en Laboratorios */}
           <div className="card schedule-card">
             <div className="card-header blue-header">
@@ -236,7 +207,7 @@ function DashboardApp() {
               <div className="header-icon"><BookOpen size={20} /></div>
               <div className="header-titles">
                 <h3>Mis Materias Inscritas</h3>
-                <p>Periodo Académico Vigente (2026-A)</p>
+                <p>Periodo Académico Vigente</p>
               </div>
             </div>
             <div className="card-body">
@@ -244,16 +215,18 @@ function DashboardApp() {
                 <div className="loading-placeholder">Cargando asignaturas...</div>
               ) : activeEnrollments && activeEnrollments.length > 0 ? (
                 <div className="subject-list">
-                  {activeEnrollments.map((enr: any) => (
+                  {activeEnrollments.map((enr) => (
                     <div className="subject-pill" key={enr.id}>
                       <div className="subject-info">
                         <span className="subject-icon">📘</span>
                         <div>
-                          <h4>{enr.subject_name}</h4>
-                          <p>{enr.semester_name} — Paralelo {enr.parallel_name}</p>
+                          <h4>{enr.name}</h4>
+                          <p>{enr.semester_name}{enr.parallel_name ? ` — Paralelo ${enr.parallel_name}` : ''}</p>
                         </div>
                       </div>
-                      <span className="badge badge-medium">En Curso</span>
+                      <span className="badge badge-medium">
+                        {enr.semester_level === status?.mandatory_level ? 'Obligatorio' : 'En Curso'}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -266,14 +239,14 @@ function DashboardApp() {
 
         {/* COLUMNA DERECHA: Progreso y Accesos */}
         <div className="dashboard-col-right">
-          
+
           {/* Progreso Académico - Recharts Pie Chart */}
           <div className="card progress-card">
             <div className="card-header default-header">
               <div className="header-icon"><GraduationCap size={20} /></div>
               <div className="header-titles">
                 <h3>Avance Curricular</h3>
-                <p>Progreso de malla curricular (53 materias)</p>
+                <p>Progreso de malla curricular ({totalCurriculum} materias)</p>
               </div>
             </div>
             <div className="card-body centered">
@@ -297,7 +270,7 @@ function DashboardApp() {
                     stroke="#3b82f6"
                     strokeWidth="14"
                     strokeDasharray="440"
-                    strokeDashoffset={440 - (440 * (completedCount + enrolledCount)) / 53}
+                    strokeDashoffset={440 - (440 * (completedCount + enrolledCount)) / totalCurriculum}
                     strokeLinecap="round"
                     style={{ transition: 'stroke-dashoffset 0.8s ease' }}
                   />
@@ -310,17 +283,17 @@ function DashboardApp() {
                     stroke="#10b981"
                     strokeWidth="14"
                     strokeDasharray="440"
-                    strokeDashoffset={440 - (440 * completedCount) / 53}
+                    strokeDashoffset={440 - (440 * completedCount) / totalCurriculum}
                     strokeLinecap="round"
                     style={{ transition: 'stroke-dashoffset 0.8s ease' }}
                   />
                 </svg>
                 <div className="chart-center-label">
-                  <span className="percent-num">{Math.round(((completedCount) / 53) * 100)}%</span>
+                  <span className="percent-num">{Math.round(((completedCount) / totalCurriculum) * 100)}%</span>
                   <span className="percent-txt">Aprobado</span>
                 </div>
               </div>
-              
+
               <div className="legend-container">
                 {progressData.map((d, index) => (
                   <div className="legend-item" key={index}>
@@ -365,7 +338,7 @@ function DashboardApp() {
                 📚 Biblioteca Digital UCE
               </button>
             </div>
-            
+
             <div className="event-badge">
               <div className="event-title">📢 Próximo Evento Académico</div>
               <div className="event-name">Casa Abierta de Ingeniería en Sistemas</div>

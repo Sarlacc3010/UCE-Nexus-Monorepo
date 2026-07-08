@@ -1,46 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Award, CheckCircle, GraduationCap, Clock, XCircle, MinusCircle } from 'lucide-react';
+import { Award, CheckCircle, GraduationCap, Clock, XCircle, MinusCircle, Circle } from 'lucide-react';
+import {
+  fetchAcademicStatus, getStudentIdFromToken, REGULARITY_LABEL
+} from '../lib/academicStatus';
+import type { AcademicStatus, AcademicSubject } from '../lib/academicStatus';
 import './GradesModule.css';
-
-interface GradeBlock {
-  id: number;
-  subject_name: string;
-  semester_name: string;
-  semester_level?: number;
-  nota_individual: string | null;
-  nota_grupal: string | null;
-  examen_hemisemestre: string | null;
-  examen_final: string | null;
-  nota_total: string | null;
-  estado: string;
-}
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
-/**
- * Extrae el student_id del payload JWT.
- * El campo student_id es emitido directamente por ms-02-identity en el token.
- */
-const getStudentIdFromToken = (token: string | null): number => {
-  if (!token) return 7; // Fallback al ID de aenavarreteg1
-  try {
-    const parts = token.split('.');
-    if (parts.length === 3) {
-      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-      // El token incluye student_id directamente como claim
-      if (payload.student_id !== undefined && payload.student_id !== null) {
-        return Number(payload.student_id);
-      }
-      // Fallback: leer del sub claim (ID interno del usuario)
-      if (payload.sub !== undefined) {
-        // No usar sub como student_id — son UUIDs distintos
-      }
-    }
-  } catch (err) {
-    console.error('[GradesModule] Error parsing token:', err);
-  }
-  return 7; // Default para aenavarreteg1
-};
 
 const formatGrade = (value: string | null): string => {
   if (value === null || value === undefined) return '—';
@@ -52,10 +16,11 @@ const formatGrade = (value: string | null): string => {
 const StatusBadge: React.FC<{ estado: string }> = ({ estado }) => {
   const lower = estado?.toLowerCase() || '';
   let icon = <CheckCircle size={12} className="status-icon" />;
-  
-  if (lower === 'cursando') icon = <Clock size={12} className="status-icon" />;
+
+  if (lower === 'matriculado' || lower === 'cursando') icon = <Clock size={12} className="status-icon" />;
   else if (lower === 'reprobado') icon = <XCircle size={12} className="status-icon" />;
   else if (lower === 'retirado') icon = <MinusCircle size={12} className="status-icon" />;
+  else if (lower === 'pendiente') icon = <Circle size={12} className="status-icon" />;
 
   return (
     <span className={`status-badge status-${lower}`}>
@@ -66,34 +31,32 @@ const StatusBadge: React.FC<{ estado: string }> = ({ estado }) => {
 };
 
 const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
-  const [grades, setGrades] = useState<GradeBlock[]>([]);
+  const [status, setStatus] = useState<AcademicStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState<string>('Todos');
+  const [selectedLevel, setSelectedLevel] = useState<number | 'Todos'>('Todos');
 
   const studentId = getStudentIdFromToken(token);
 
   useEffect(() => {
-    const fetchGrades = async () => {
+    if (!studentId) {
+      setError('No se pudo identificar al estudiante desde la sesión.');
+      setLoading(false);
+      return;
+    }
+    const load = async () => {
       setLoading(true);
       setError('');
       try {
-        const headers: HeadersInit = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        const res = await fetch(`${API_URL}/academic/students/${studentId}/grades`, { headers });
-        if (!res.ok) throw new Error(`Error ${res.status}: No se pudieron obtener las calificaciones`);
-
-        const data: GradeBlock[] = await res.json();
-        setGrades(data);
+        const data = await fetchAcademicStatus(studentId, token);
+        setStatus(data);
       } catch (err: any) {
         setError(err.message || 'Error de conexión con el servidor');
       } finally {
         setLoading(false);
       }
     };
-
-    fetchGrades();
+    load();
   }, [studentId, token]);
 
   if (loading) {
@@ -114,7 +77,7 @@ const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
     );
   }
 
-  if (grades.length === 0) {
+  if (!status || status.semesters.length === 0) {
     return (
       <div className="grades-empty">
         <GraduationCap size={48} className="empty-icon" />
@@ -124,48 +87,19 @@ const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
     );
   }
 
-  // Ordenar semestres por nivel (si hay campo semester_level, si no por nombre)
-  const semesterOrder: Record<string, number> = {
-    'Primer Semestre': 1,
-    'Segundo Semestre': 2,
-    'Tercer Semestre': 3,
-    'Cuarto Semestre': 4,
-    'Quinto Semestre': 5,
-    'Sexto Semestre': 6,
-    'Séptimo Semestre': 7,
-    'Octavo Semestre': 8,
-    'Noveno Semestre': 9,
-    'Décimo Semestre': 10,
-  };
+  const allSubjects: AcademicSubject[] = status.semesters.flatMap(s => s.subjects);
 
-  // Obtener semestres únicos ordenados por nivel
-  const semesters = Array.from(new Set(grades.map(g => g.semester_name)))
-    .sort((a, b) => (semesterOrder[a] ?? 99) - (semesterOrder[b] ?? 99));
-
-  const filteredGrades = selectedSemester === 'Todos'
-    ? grades
-    : grades.filter(g => g.semester_name === selectedSemester);
-
-  // Agrupar por semestre manteniendo orden
-  const orderedSemestersInView = semesters.filter(s =>
-    selectedSemester === 'Todos' ? true : s === selectedSemester
+  const semestersInView = status.semesters.filter(s =>
+    selectedLevel === 'Todos' ? true : s.level === selectedLevel
   );
 
-  const groupedGrades = filteredGrades.reduce((acc, curr) => {
-    if (!acc[curr.semester_name]) {
-      acc[curr.semester_name] = [];
-    }
-    acc[curr.semester_name].push(curr);
-    return acc;
-  }, {} as Record<string, GradeBlock[]>);
+  // Estadísticas rápidas (sobre TODA la malla, no solo la vista filtrada)
+  const totalAprobadas = allSubjects.filter(g => g.estado === 'APROBADO').length;
+  const totalMatriculadas = allSubjects.filter(g => g.estado === 'MATRICULADO').length;
+  const totalReprobadas = allSubjects.filter(g => g.estado === 'REPROBADO').length;
+  const semestresAprobados = status.semesters.filter(s => s.subjects.every(g => g.estado === 'APROBADO')).length;
 
-  // Calcular estadísticas
-  const totalAprobadas = grades.filter(g => g.estado === 'APROBADO').length;
-  const totalCursando = grades.filter(g => g.estado === 'CURSANDO').length;
-  const totalReprobadas = grades.filter(g => g.estado === 'REPROBADO').length;
-  const semestresAprobados = new Set(
-    grades.filter(g => g.estado === 'APROBADO').map(g => g.semester_name)
-  ).size;
+  const regularityKey = status.regularity.toLowerCase();
 
   return (
     <div className="grades-container">
@@ -176,18 +110,23 @@ const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
         </div>
         <div className="header-text-content">
           <h2>Historial de Calificaciones</h2>
-          <p>Historial Completo · Estudiante #{studentId}</p>
+          <p>Historial Completo · Estudiante #{studentId} · {status.approved_count}/{status.total_curriculum_count} materias aprobadas</p>
+          <span className={`regularity-badge regularity-${regularityKey}`}>
+            {REGULARITY_LABEL[status.regularity]}
+            {status.mandatory_level && ` · Semestre obligatorio: ${status.mandatory_level}`}
+            {status.optional_level && status.regularity === 'IRREGULAR' && ` · Opcional: ${status.optional_level}`}
+          </span>
         </div>
 
         <div className="semester-filter">
           <select
-            value={selectedSemester}
-            onChange={(e) => setSelectedSemester(e.target.value)}
+            value={selectedLevel}
+            onChange={(e) => setSelectedLevel(e.target.value === 'Todos' ? 'Todos' : Number(e.target.value))}
             className="semester-select"
           >
             <option value="Todos">Todos los Semestres</option>
-            {semesters.map(sem => (
-              <option key={sem} value={sem}>{sem}</option>
+            {status.semesters.map(sem => (
+              <option key={sem.level} value={sem.level}>{sem.semester_name}</option>
             ))}
           </select>
         </div>
@@ -200,8 +139,8 @@ const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
           <span className="stat-label">Aprobadas</span>
         </div>
         <div className="stat-card stat-cursando">
-          <span className="stat-num">{totalCursando}</span>
-          <span className="stat-label">Cursando</span>
+          <span className="stat-num">{totalMatriculadas}</span>
+          <span className="stat-label">Matriculadas</span>
         </div>
         <div className="stat-card stat-reprobado">
           <span className="stat-num">{totalReprobadas}</span>
@@ -209,31 +148,26 @@ const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
         </div>
         <div className="stat-card stat-semestres">
           <span className="stat-num">{semestresAprobados}</span>
-          <span className="stat-label">Semestres</span>
+          <span className="stat-label">Semestres Completos</span>
         </div>
       </div>
 
       {/* Tablas por semestre */}
       <div className="grades-content">
-        {orderedSemestersInView.map(semester => (
-          groupedGrades[semester] ? (
-            <div key={semester} className="semester-group">
+        {semestersInView.map(semester => {
+          const allApproved = semester.subjects.every(g => g.estado === 'APROBADO');
+          const anyInProgress = semester.subjects.some(g => g.estado === 'MATRICULADO');
+          const tagClass = allApproved ? 'tag-aprobado' : anyInProgress ? 'tag-matriculado' : 'tag-mixto';
+          const tagText = allApproved ? '✓ Completado' : anyInProgress ? '● En Curso' : '~ Pendiente';
+
+          return (
+            <div key={semester.level} className="semester-group">
               <h3 className="semester-title">
                 <GraduationCap size={18} className="check-icon" />
-                {semester}
-                <span className={`semester-status-tag ${
-                  groupedGrades[semester].every(g => g.estado === 'CURSANDO')
-                    ? 'tag-cursando'
-                    : groupedGrades[semester].every(g => g.estado === 'APROBADO' || g.estado === 'RETIRADO')
-                      ? 'tag-aprobado'
-                      : 'tag-mixto'
-                }`}>
-                  {groupedGrades[semester].every(g => g.estado === 'CURSANDO')
-                    ? '● En Curso'
-                    : groupedGrades[semester].every(g => g.estado === 'APROBADO' || g.estado === 'RETIRADO')
-                      ? '✓ Completado'
-                      : '~ Histórico'}
-                </span>
+                {semester.semester_name}
+                <span className={`semester-status-tag ${tagClass}`}>{tagText}</span>
+                {semester.is_mandatory && <span className="semester-status-tag tag-obligatorio">Obligatorio</span>}
+                {semester.is_optional && <span className="semester-status-tag tag-opcional">Opcional (siguiente)</span>}
               </h3>
 
               <div className="grades-table-wrapper">
@@ -250,9 +184,14 @@ const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {groupedGrades[semester].map(grade => (
+                    {semester.subjects.map(grade => (
                       <tr key={grade.id} className={`grade-row grade-row-${grade.estado?.toLowerCase()}`}>
-                        <td className="subject-col"><strong>{grade.subject_name}</strong></td>
+                        <td className="subject-col">
+                          <strong>{grade.name}</strong>
+                          {grade.attempts_count > 1 && (
+                            <span className="attempt-tag"> ({grade.attempts_count}ª matrícula)</span>
+                          )}
+                        </td>
                         <td className="text-center">{formatGrade(grade.nota_individual)}</td>
                         <td className="text-center">{formatGrade(grade.nota_grupal)}</td>
                         <td className="text-center">{formatGrade(grade.examen_hemisemestre)}</td>
@@ -269,8 +208,8 @@ const GradesModule: React.FC<{ token: string | null }> = ({ token }) => {
                 </table>
               </div>
             </div>
-          ) : null
-        ))}
+          );
+        })}
       </div>
     </div>
   );

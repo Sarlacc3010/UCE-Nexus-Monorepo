@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
+import { API_URL, getStudentIdFromToken, fetchAcademicStatus, REGULARITY_LABEL } from '../lib/academicStatus';
+import type { AcademicStatus } from '../lib/academicStatus';
 import './EnrolledScheduleModule.css';
 
 interface ScheduleBlock {
@@ -12,42 +14,37 @@ interface ScheduleBlock {
   parallel_name: string;
   subject_name: string;
   semester_name: string;
+  semester_level: number;
 }
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
-const getStudentIdFromToken = (token: string | null): number => {
-  if (!token) return 42; // Estudiante 42 tiene matrículas de prueba
-  try {
-    const parts = token.split('.');
-    if (parts.length === 3) {
-      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-      const username = payload.preferred_username || '';
-      const match = username.match(/\d+/);
-      if (match) return parseInt(match[0], 10);
-    }
-  } catch (err) {}
-  return 42;
-};
 
 const EnrolledScheduleModule: React.FC<{ token: string | null }> = ({ token }) => {
   const [schedules, setSchedules] = useState<ScheduleBlock[]>([]);
+  const [status, setStatus] = useState<AcademicStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const studentId = getStudentIdFromToken(token);
 
   useEffect(() => {
-    const fetchSchedules = async () => {
+    if (!studentId) {
+      setError('No se pudo identificar al estudiante desde la sesión.');
+      setLoading(false);
+      return;
+    }
+
+    const load = async () => {
       try {
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const res = await fetch(`${API_URL}/academic/students/${studentId}/schedules`, { headers });
-        if (!res.ok) throw new Error('No se pudo obtener el horario');
+        const [schedulesRes, statusData] = await Promise.all([
+          fetch(`${API_URL}/academic/students/${studentId}/schedules`, { headers }),
+          fetchAcademicStatus(studentId, token)
+        ]);
+        if (!schedulesRes.ok) throw new Error('No se pudo obtener el horario');
 
-        const data = await res.json();
-        setSchedules(data);
+        setSchedules(await schedulesRes.json());
+        setStatus(statusData);
       } catch (err: any) {
         setError(err.message || 'Error de conexión');
       } finally {
@@ -55,7 +52,7 @@ const EnrolledScheduleModule: React.FC<{ token: string | null }> = ({ token }) =
       }
     };
 
-    fetchSchedules();
+    load();
   }, [studentId, token]);
 
   const daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -80,6 +77,8 @@ const EnrolledScheduleModule: React.FC<{ token: string | null }> = ({ token }) =
       .sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
   };
 
+  const regularityKey = status?.regularity.toLowerCase();
+
   return (
     <div className="schedule-container">
       <div className="schedule-header">
@@ -89,6 +88,15 @@ const EnrolledScheduleModule: React.FC<{ token: string | null }> = ({ token }) =
         <div>
           <h2>Horario de Clases (Matrícula Vigente)</h2>
           <p>Estudiante #{studentId} - Facultad de Ingeniería y Ciencias Aplicadas</p>
+          {status && (
+            <div className="regularity-line">
+              <span className={`regularity-pill ${regularityKey}`}>{REGULARITY_LABEL[status.regularity]}</span>
+              {status.mandatory_level && <span>Obligatorio: Semestre {status.mandatory_level}</span>}
+              {status.regularity === 'IRREGULAR' && status.optional_level && (
+                <span>· Opcional: Semestre {status.optional_level}</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -131,7 +139,7 @@ const EnrolledScheduleModule: React.FC<{ token: string | null }> = ({ token }) =
                     // Timeline starts at 7:00
                     const topPos = ((startH - 7) * 60) + startM;
                     const duration = ((endH - startH) * 60) + (endM - startM);
-                    
+
                     // Curated vibrant modern color palette
                     const colorPalette = [
                       { bg: '#eff6ff', border: '#3b82f6', text: '#1e3a8a', labelBg: '#dbeafe' }, // Blue
@@ -142,7 +150,7 @@ const EnrolledScheduleModule: React.FC<{ token: string | null }> = ({ token }) =
                       { bg: '#f5f3ff', border: '#8b5cf6', text: '#4c1d95', labelBg: '#ede9fe' }, // Violet
                       { bg: '#f0fdfa', border: '#14b8a6', text: '#134e4a', labelBg: '#ccfbf1' }, // Teal
                     ];
-                    
+
                     let hash = 0;
                     for (let i = 0; i < block.subject_name.length; i++) {
                       hash = block.subject_name.charCodeAt(i) + ((hash << 5) - hash);
@@ -150,9 +158,12 @@ const EnrolledScheduleModule: React.FC<{ token: string | null }> = ({ token }) =
                     const colorIndex = Math.abs(hash) % colorPalette.length;
                     const theme = colorPalette[colorIndex];
 
+                    const isMandatory = status && block.semester_level === status.mandatory_level;
+                    const isOptional = status && block.semester_level === status.optional_level;
+
                     return (
-                      <div 
-                        key={block.id} 
+                      <div
+                        key={block.id}
                         className="class-block"
                         style={{
                           top: `${topPos}px`,
@@ -167,6 +178,11 @@ const EnrolledScheduleModule: React.FC<{ token: string | null }> = ({ token }) =
                         <div className="class-room" style={{ backgroundColor: theme.labelBg, color: theme.text }}>
                           {block.parallel_name}
                         </div>
+                        {(isMandatory || isOptional) && (
+                          <span className={`class-semester-tag ${isMandatory ? 'obligatorio' : 'opcional'}`}>
+                            {isMandatory ? 'Obligatorio' : 'Opcional'} · Sem. {block.semester_level}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
