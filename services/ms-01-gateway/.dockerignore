@@ -1,4 +1,7 @@
 node_modules
 dist
+.env
 .turbo
-*.log
+jest.config.js
+test-booking.js
+test-catalog.js

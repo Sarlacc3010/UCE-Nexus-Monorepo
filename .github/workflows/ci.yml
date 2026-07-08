@@ -58,6 +58,7 @@ jobs:
       payment_write: ${{ steps.filter.outputs.payment_write }}
       payment_read: ${{ steps.filter.outputs.payment_read }}
       web_payments: ${{ steps.filter.outputs.web_payments }}
+      audit: ${{ steps.filter.outputs.audit }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -97,6 +98,8 @@ jobs:
               - 'services/ms-05-payment-read/**'
             web_payments:
               - 'apps/web-payments/**'
+            audit:
+              - 'services/ms-10-audit/**'
 
   # ==========================================
   # 2.5. CI: Pruebas Unitarias
@@ -120,8 +123,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
-            services/ms-11-catalog
+            services/ms-08-ai-agent
             services/ms-09-geocampus
+            services/ms-10-audit
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -827,6 +831,49 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/ms-05-payment-read:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_HUB_USERNAME }}/ms-05-payment-read:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================
+  # 15. Build & Push: Audit Service (MS-10)
+  # ==========================================
+  build-audit:
+    name: Build & Push Audit Service (MS-10)
+    needs: [changes-detector, secrets-scan, run-tests]
+    if: ${{ needs.changes-detector.outputs.audit == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set Docker Image Tag
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" = "QA" ]; then
+            echo "IMAGE_TAG=qa" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/ms-10-audit
+          file: ./services/ms-10-audit/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/uce-nexus-ms-10-audit:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/uce-nexus-ms-10-audit:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
