@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { gsap } from 'gsap';
 import { BookOpen, Calendar, Clock, GraduationCap, LayoutDashboard } from 'lucide-react';
@@ -30,11 +30,14 @@ const getStudentIdFromToken = (token: string): number => {
     const parts = token.split('.');
     if (parts.length === 3) {
       const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-      const username = payload.preferred_username || '';
+      if (payload.student_id !== undefined && payload.student_id !== null) {
+        return parseInt(payload.student_id, 10);
+      }
+      const username = payload.preferred_username || payload.username || '';
       
       if (username.includes('carlos')) return 4;
       if (username.includes('juan')) return 6;
-      if (username.includes('student') || username.includes('estudiante')) {
+      if (username.includes('student') || username.includes('estudiante') || username.includes('navarrete') || username.includes('abel')) {
         const match = username.match(/\d+/);
         if (match) return parseInt(match[0], 10);
       }
@@ -69,28 +72,31 @@ function DashboardApp() {
   const studentName = getStudentNameFromToken(token);
 
   // Consultar las materias matriculadas del estudiante actual de forma dinámica
-  const { data: enrollments, isLoading: loadingEnrollments } = useQuery<Enrollment[]>({
-    queryKey: ['student-enrollments', studentId],
+  // Eliminado: ahora usamos activeEnrollments derivado de grades
+
+  // Consultar todos los horarios de clase programados en los laboratorios (específico del estudiante)
+  const { data: schedules, isLoading: loadingSchedules } = useQuery<Schedule[]>({
+    queryKey: ['student-schedules', studentId],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/academic/students/${studentId}/enrollments`);
-      if (!res.ok) throw new Error('Error al obtener matriculaciones');
+      const res = await fetch(`${API_URL}/api/academic/students/${studentId}/schedules`);
+      if (!res.ok) throw new Error('Error al obtener horarios');
       return res.json();
     }
   });
 
-  // Consultar todos los horarios de clase programados en los laboratorios
-  const { data: schedules, isLoading: loadingSchedules } = useQuery<Schedule[]>({
-    queryKey: ['academic-schedules'],
+  // Consultar notas reales del estudiante en la base de datos
+  const { data: grades, isLoading: loadingGrades } = useQuery<any[]>({
+    queryKey: ['student-grades', studentId],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/academic/schedules`);
-      if (!res.ok) throw new Error('Error al obtener horarios');
+      const res = await fetch(`${API_URL}/api/academic/students/${studentId}/grades`);
+      if (!res.ok) throw new Error('Error al obtener notas');
       return res.json();
     }
   });
 
   // Animaciones GSAP al cargar el panel
   useEffect(() => {
-    if (containerRef.current && !loadingEnrollments && !loadingSchedules) {
+    if (containerRef.current && !loadingSchedules && !loadingGrades) {
       const ctx = gsap.context(() => {
         // Animación de entrada de las tarjetas del Dashboard
         gsap.from('.card', {
@@ -114,32 +120,61 @@ function DashboardApp() {
 
       return () => ctx.revert();
     }
-  }, [loadingEnrollments, loadingSchedules]);
+  }, [loadingSchedules, loadingGrades]);
 
-  // Obtener nivel de semestre actual (el menor de las materias matriculadas)
-  const currentSemesterLevel = enrollments && enrollments.length > 0 
-    ? Math.min(...enrollments.map(e => (e as any).level || 1)) 
-    : 2;
+  // Derived values from grades
+  const activeEnrollments = useMemo(() => {
+    if (!grades) return [];
+    return grades.filter((g: any) => g.estado === 'CURSANDO');
+  }, [grades]);
+
+  const completedGrades = useMemo(() => {
+    if (!grades) return [];
+    return grades.filter((g: any) => g.estado === 'APROBADO');
+  }, [grades]);
+
+  // Derive current semester from active enrollments or default to 2
+  const currentSemesterLevel = useMemo(() => {
+    if (activeEnrollments.length > 0) {
+      // Just a naive mapping from semester_name to level. A more robust way would be mapping names.
+      const firstActive = activeEnrollments[0].semester_name;
+      const levels: Record<string, number> = {
+        'Primer Semestre': 1, 'Segundo Semestre': 2, 'Tercer Semestre': 3, 'Cuarto Semestre': 4,
+        'Quinto Semestre': 5, 'Sexto Semestre': 6, 'Séptimo Semestre': 7, 'Octavo Semestre': 8,
+        'Noveno Semestre': 9, 'Décimo Semestre': 10
+      };
+      return levels[firstActive] || 8;
+    }
+    return 8;
+  }, [activeEnrollments]);
 
   const getSemesterText = (level: number) => {
     const texts = [
       '1er Semestre', '2do Semestre', '3er Semestre', '4to Semestre', '5to Semestre',
       '6to Semestre', '7mo Semestre', '8vo Semestre', '9no Semestre', '10mo Semestre'
     ];
-    return texts[level - 1] || '2do Semestre';
+    return texts[level - 1] || 'Octavo Semestre';
   };
 
-  const getCompletedCount = (level: number) => {
-    const cumulative = [0, 0, 5, 11, 17, 23, 28, 33, 39, 44, 49, 53];
-    return cumulative[level] || 5;
-  };
+  // Promedio dinámico y real en base a calificaciones de la base de datos
+  const averageScore = useMemo(() => {
+    if (!completedGrades || completedGrades.length === 0) {
+      return (8.0 + (studentId % 15) / 10).toFixed(2); // fallback determinista
+    }
+    
+    let totalScore = 0;
+    
+    completedGrades.forEach((g: any) => {
+      totalScore += parseFloat(g.nota_total || '0');
+    });
+    
+    return (totalScore / completedGrades.length).toFixed(2);
+  }, [completedGrades, studentId]);
 
-  // Promedio dinámico y determinista basado en el ID del estudiante
-  const averageScore = (8.0 + (studentId % 15) / 10).toFixed(2);
   const progressBarWidth = `${parseFloat(averageScore) * 10}%`;
 
-  const enrolledCount = enrollments?.length || 0;
-  const completedCount = getCompletedCount(currentSemesterLevel);
+  const enrolledCount = activeEnrollments.length;
+  const completedCount = completedGrades.length;
   const pendingCount = Math.max(0, 53 - completedCount - enrolledCount);
 
   const progressData = [
@@ -205,17 +240,17 @@ function DashboardApp() {
               </div>
             </div>
             <div className="card-body">
-              {loadingEnrollments ? (
+              {loadingGrades ? (
                 <div className="loading-placeholder">Cargando asignaturas...</div>
-              ) : enrollments && enrollments.length > 0 ? (
+              ) : activeEnrollments && activeEnrollments.length > 0 ? (
                 <div className="subject-list">
-                  {enrollments.map((enr) => (
+                  {activeEnrollments.map((enr: any) => (
                     <div className="subject-pill" key={enr.id}>
                       <div className="subject-info">
                         <span className="subject-icon">📘</span>
                         <div>
                           <h4>{enr.subject_name}</h4>
-                          <p>{enr.semester_name} — Paralelo {enr.name}</p>
+                          <p>{enr.semester_name} — Paralelo {enr.parallel_name}</p>
                         </div>
                       </div>
                       <span className="badge badge-medium">En Curso</span>
