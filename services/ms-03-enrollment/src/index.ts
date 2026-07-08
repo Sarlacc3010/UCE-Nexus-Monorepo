@@ -899,4 +899,3 @@ app.listen(PORT, async () => {
     console.error('❌ Error al arrancar el consumidor de Kafka para Matrículas:', err);
   });
 });
-
