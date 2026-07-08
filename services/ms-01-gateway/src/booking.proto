@@ -16,6 +16,9 @@ message BookingRequest {
   string resource_type = 2; 
   string resource_id = 3;
   string date = 4;
+  string end_time = 5;
+  string subject_id = 6;
+  string reason = 7;
 }
 
 // Lo que Go le responderá a Node.js
