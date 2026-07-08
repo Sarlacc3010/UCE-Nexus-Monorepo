@@ -38,14 +38,21 @@ jobs:
             echo "DEPLOY_ENV=Production" >> $GITHUB_ENV
             echo "DOCKER_HUB_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
             echo "BASTION_IP=${{ secrets.PROD_BASTION_IP }}" >> $GITHUB_ENV
-            echo "APP_PRIVATE_IP=${{ secrets.PROD_APP_PRIVATE_IP }}" >> $GITHUB_ENV
             echo "DB_PRIVATE_IP=${{ secrets.PROD_DB_PRIVATE_IP }}" >> $GITHUB_ENV
+            echo "AWS_ACCESS_KEY_ID=${{ secrets.PROD_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+            echo "AWS_SECRET_ACCESS_KEY=${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+            echo "AWS_SESSION_TOKEN=${{ secrets.PROD_AWS_SESSION_TOKEN }}" >> $GITHUB_ENV
+            echo "ASG_NAME=uce-nexus-production-app-asg" >> $GITHUB_ENV
             echo "${{ secrets.PROD_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           else
             echo "DEPLOY_ENV=QA" >> $GITHUB_ENV
             echo "DOCKER_HUB_TAG=qa" >> $GITHUB_ENV
             echo "BASTION_IP=${{ secrets.QA_BASTION_IP }}" >> $GITHUB_ENV
             echo "DB_PRIVATE_IP=${{ secrets.QA_DB_PRIVATE_IP }}" >> $GITHUB_ENV
+            echo "AWS_ACCESS_KEY_ID=${{ secrets.QA_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+            echo "AWS_SECRET_ACCESS_KEY=${{ secrets.QA_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+            echo "AWS_SESSION_TOKEN=${{ secrets.QA_AWS_SESSION_TOKEN }}" >> $GITHUB_ENV
+            echo "ASG_NAME=uce-nexus-qa-app-asg" >> $GITHUB_ENV
             echo "${{ secrets.QA_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           fi
           
@@ -54,36 +61,29 @@ jobs:
       # ==========================================
       # 1b. Descubrir IP del App Server (QA - ASG)
       # ==========================================
-      - name: Discover QA App Server IP via boto3
-        if: "!startsWith(github.ref_name, 'v')"
-        env:
-          QA_KEY_ID: ${{ secrets.QA_AWS_ACCESS_KEY_ID }}
-          QA_SECRET: ${{ secrets.QA_AWS_SECRET_ACCESS_KEY }}
-          QA_TOKEN: ${{ secrets.QA_AWS_SESSION_TOKEN }}
+      - name: Discover App Server IP via boto3
         run: |
           pip install --quiet boto3
 
           cat > /tmp/get_ip.py << 'PYEOF'
           import boto3, os, sys
-          key_id = os.environ["QA_KEY_ID"].strip()
-          secret = os.environ["QA_SECRET"].strip()
-          token  = os.environ["QA_TOKEN"].strip()
           session = boto3.Session(
-              aws_access_key_id=key_id,
-              aws_secret_access_key=secret,
-              aws_session_token=token,
+              aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"].strip(),
+              aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"].strip(),
+              aws_session_token=os.environ["AWS_SESSION_TOKEN"].strip(),
               region_name="us-east-1",
           )
           ec2 = session.client("ec2")
+          asg_name = os.environ["ASG_NAME"]
           resp = ec2.describe_instances(
               Filters=[
-                  {"Name": "tag:Name",            "Values": ["uce-nexus-qa-app-asg"]},
+                  {"Name": "tag:Name",            "Values": [asg_name]},
                   {"Name": "instance-state-name", "Values": ["running"]},
               ]
           )
           reservations = resp.get("Reservations", [])
           if not reservations or not reservations[0]["Instances"]:
-              print("ERROR: no running instance found", file=sys.stderr)
+              print("ERROR: no running instance found for ASG: " + asg_name, file=sys.stderr)
               sys.exit(1)
           print(reservations[0]["Instances"][0]["PrivateIpAddress"])
           PYEOF
