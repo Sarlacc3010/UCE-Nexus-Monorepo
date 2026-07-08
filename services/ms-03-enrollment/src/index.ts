@@ -232,7 +232,8 @@ app.get('/api/students/:id/schedules', async (req: Request, res: Response): Prom
       JOIN subjects sub ON p.subject_id = sub.id
       JOIN semesters sem ON sub.semester_id = sem.id
       JOIN student_enrollments se ON se.parallel_id = p.id
-      WHERE se.student_id = $1
+      LEFT JOIN grades g ON g.student_id = se.student_id AND g.parallel_id = p.id
+      WHERE se.student_id = $1 AND (g.estado = 'CURSANDO' OR g.estado IS NULL)
       ORDER BY s.dia, s.hora_inicio
     `;
     const result = await pool.query(query, [studentIdStr]);
@@ -723,6 +724,27 @@ app.get('/api/students/:student_id/semester-status/:semester_id', async (req: Re
     }
   } catch (error: any) {
     console.error('Error fetching semester status:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/enrollments/stats', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const matriculadosRes = await pool.query("SELECT COUNT(DISTINCT student_id) FROM student_semester_status WHERE status = 'MATRICULADO'");
+    const inscritosRes = await pool.query("SELECT COUNT(DISTINCT student_id) FROM student_semester_status WHERE status = 'INSCRITO'");
+    const terceraRes = await pool.query("SELECT COUNT(DISTINCT student_id) FROM student_requests WHERE tipo_solicitud = 'TERCERA_MATRICULA'");
+    
+    const primeraCount = parseInt(matriculadosRes.rows[0].count || '0', 10);
+    const segundaCount = parseInt(inscritosRes.rows[0].count || '0', 10);
+    const terceraCount = parseInt(terceraRes.rows[0].count || '0', 10);
+
+    res.json({
+      primeraMatricula: primeraCount,
+      segundaMatricula: segundaCount,
+      terceraMatricula: terceraCount
+    });
+  } catch (error: any) {
+    console.error('Error fetching enrollment stats:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
