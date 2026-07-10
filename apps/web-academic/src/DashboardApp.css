@@ -61,6 +61,21 @@
   font-weight: 600;
 }
 
+.regularity-tag {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.regularity-regular { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.regularity-irregular { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.regularity-egresado { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.regularity-sin_matricula_activa { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+
 /* Grid del Dashboard */
 .dashboard-grid {
   display: grid;

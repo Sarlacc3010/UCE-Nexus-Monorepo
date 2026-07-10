@@ -3,35 +3,35 @@
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'Space Mono', 'Fira Code', Consolas, Monaco, monospace;
 
-  /* Colores del Sistema (Deep Space Dark Theme) */
-  --bg-primary: #050b14;
-  --bg-secondary: #0a1424;
-  --bg-tertiary: #0e1e36;
+  /* Colores del Sistema (UCE Light Theme) */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
   
   /* Gradientes de Acentuación */
-  --gradient-indigo: linear-gradient(135deg, hsl(250, 89%, 65%) 0%, hsl(280, 89%, 60%) 100%);
-  --gradient-cyan: linear-gradient(135deg, hsl(185, 90%, 48%) 0%, hsl(215, 90%, 52%) 100%);
-  --gradient-rose: linear-gradient(135deg, hsl(330, 85%, 55%) 0%, hsl(350, 85%, 50%) 100%);
-  --gradient-dark: linear-gradient(135deg, #0e1e36 0%, #050b14 100%);
-  --gradient-radial: radial-gradient(circle at top, hsl(222, 50%, 15%) 0%, #050b14 100%);
+  --gradient-indigo: linear-gradient(135deg, #0d3b8e 0%, #1e40af 100%);
+  --gradient-cyan: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+  --gradient-rose: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
+  --gradient-dark: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  --gradient-radial: radial-gradient(circle at top, #eff6ff 0%, #f8fafc 100%);
   
   /* Colores de Texto */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
   --text-muted: #64748b;
   
   /* Bordes y Vidrio (Glassmorphism) */
-  --glass-bg: rgba(10, 20, 36, 0.5);
-  --glass-bg-hover: rgba(14, 30, 54, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.07);
-  --glass-border-focus: rgba(99, 102, 241, 0.4);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-bg-hover: rgba(255, 255, 255, 0.95);
+  --glass-border: rgba(13, 59, 142, 0.08);
+  --glass-border-focus: rgba(13, 59, 142, 0.4);
   
   /* Sombras y Luces */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
-  --shadow-glow-indigo: 0 0 20px rgba(99, 102, 241, 0.15);
-  --shadow-glow-cyan: 0 0 20px rgba(6, 182, 212, 0.15);
+  --shadow-sm: 0 2px 6px rgba(13, 59, 142, 0.04);
+  --shadow-md: 0 10px 30px -5px rgba(13, 59, 142, 0.08), 0 8px 10px -6px rgba(13, 59, 142, 0.06);
+  --shadow-lg: 0 20px 40px -10px rgba(13, 59, 142, 0.12);
+  --shadow-glow-indigo: 0 0 15px rgba(13, 59, 142, 0.12);
+  --shadow-glow-cyan: 0 0 15px rgba(2, 132, 199, 0.12);
   
   /* Bordes */
   --radius-sm: 8px;

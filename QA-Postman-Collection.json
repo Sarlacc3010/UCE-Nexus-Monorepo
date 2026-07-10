@@ -359,6 +359,207 @@
           }
         }
       ]
+    },
+    {
+      "name": "5. Pagos y Matrículas",
+      "item": [
+        {
+          "name": "Crear Intento de Pago (Stripe Intent)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"amount\": 25.50,\n    \"currency\": \"usd\",\n    \"description\": \"Pago de matrícula arancel ordinario\",\n    \"student_id\": \"3941627b-481a-4f2a-8d57-980b9f2d5a22\",\n    \"concept\": \"arancel\"\n}"
+            },
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/payments/intent",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "intent"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Confirmar Pago (Stripe Confirm)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"payment_intent_id\": \"pi_mock_1234567890\",\n    \"student_id\": \"3941627b-481a-4f2a-8d57-980b9f2d5a22\",\n    \"concept\": \"arancel\"\n}"
+            },
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/payments/confirm",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "confirm"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Historial de Pagos Estudiante",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/payments/student/3941627b-481a-4f2a-8d57-980b9f2d5a22",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "student",
+                "3941627b-481a-4f2a-8d57-980b9f2d5a22"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Matricular Estudiante",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"semester_id\": \"2026-B\",\n    \"career\": \"Ingeniería en Computación\",\n    \"has_carryover\": true\n}"
+            },
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/students/3941627b-481a-4f2a-8d57-980b9f2d5a22/enroll",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "students",
+                "3941627b-481a-4f2a-8d57-980b9f2d5a22",
+                "enroll"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Estado de Matrícula",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://uce-nexus-qa-alb-148312753.us-east-1.elb.amazonaws.com/api/students/3941627b-481a-4f2a-8d57-980b9f2d5a22/semester-status/2026-B",
+              "protocol": "http",
+              "host": [
+                "uce-nexus-qa-alb-148312753",
+                "us-east-1",
+                "elb",
+                "amazonaws",
+                "com"
+              ],
+              "path": [
+                "api",
+                "students",
+                "3941627b-481a-4f2a-8d57-980b9f2d5a22",
+                "semester-status",
+                "2026-B"
+              ]
+            }
+          }
+        }
+      ]
     }
   ],
   "variable": [

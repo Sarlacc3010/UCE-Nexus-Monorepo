@@ -133,12 +133,36 @@ export default function PaymentsApp({ activeTab: initialTab, token }: PaymentsAp
         const parkingPayment = data.find((p: any) => p.category === 'ESTACIONAMIENTO' && p.status === 'COMPLETED');
         if (parkingPayment) {
           setHasParkingPass(true);
-          // Intentar parsear detalles del vehículo desde la descripción o usar mock premium
+          
+          let parsedDriver = 'Juan Pérez UCE';
+          let parsedPlate = 'PCG-4890';
+          let parsedModel = 'Chevrolet Sail Sport';
+          let parsedColor = 'Blanco Glaciar';
+          
+          // Intentar parsear el formato "Estacionamiento | Conductor: X | Placa: Y | Modelo: Z | Color: W"
+          if (parkingPayment.description && parkingPayment.description.includes('|')) {
+            const parts = parkingPayment.description.split('|');
+            parts.forEach((part: string) => {
+              const subparts = part.split(':');
+              if (subparts.length === 2) {
+                const key = subparts[0].trim().toLowerCase();
+                const val = subparts[1].trim();
+                if (key === 'conductor') parsedDriver = val;
+                else if (key === 'placa') parsedPlate = val;
+                else if (key === 'modelo') parsedModel = val;
+                else if (key === 'color') parsedColor = val;
+              }
+            });
+          } else if (parkingPayment.description && parkingPayment.description.includes('Conductor:')) {
+            const match = parkingPayment.description.match(/Conductor:\s*([^|]+)/);
+            if (match) parsedDriver = match[1].trim();
+          }
+          
           setParkingDetails({
-            driver: 'Juan Pérez UCE',
-            plate: 'PCG-4890',
-            model: 'Chevrolet Sail Sport',
-            color: 'Blanco Glaciar',
+            driver: parsedDriver,
+            plate: parsedPlate,
+            model: parsedModel,
+            color: parsedColor,
             validUntil: new Date(new Date(parkingPayment.created_at).getTime() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('es-EC') // 1 año de validez
           });
         } else {
@@ -678,7 +702,7 @@ export default function PaymentsApp({ activeTab: initialTab, token }: PaymentsAp
                   ) : (
                     /* Formulario de Stripe de Estacionamiento */
                     <div style={{ marginTop: '20px', borderTop: '1px solid #edf2f7', paddingTop: '20px' }}>
-                      {renderStripeForm(PARKING_ANNUAL_FEE, 'ESTACIONAMIENTO', `Pase de Estacionamiento Anual - Conductor: ${driverName}`)}
+                      {renderStripeForm(PARKING_ANNUAL_FEE, 'ESTACIONAMIENTO', `Estacionamiento | Conductor: ${driverName} | Placa: ${vehiclePlate} | Modelo: ${vehicleModel} | Color: ${vehicleColor}`)}
                     </div>
                   )}
                 </div>
