@@ -130,21 +130,40 @@ jobs:
             echo "::warning::NVD_API_KEY no configurado; Dependency-Check consultará la NVD sin autenticar (más lento / riesgo de rate-limit)."
           fi
 
-      - name: OWASP Dependency-Check (SCA npm + pip + go)
-        uses: dependency-check/Dependency-Check_Action@main
+      - name: Cache de la base de datos NVD (Dependency-Check)
+        uses: actions/cache@v4
         with:
-          project: 'UCE-Nexus'
-          path: '.'
-          format: 'ALL'
-          out: 'reports/dependency-check'
-          args: >
-            --enableExperimental
-            ${{ steps.nvd.outputs.flag }}
-            --exclude "**/node_modules/**"
-            --exclude "**/target/**"
-            --exclude "**/venv/**"
-            --exclude "**/dist/**"
-            --exclude "**/chroma_db/**"
+          path: ~/.dependency-check-data
+          key: depcheck-db-${{ github.run_id }}
+          restore-keys: |
+            depcheck-db-
+
+      # La GitHub Action "dependency-check/Dependency-Check_Action" concatena
+      # todo 'args' como un único argumento entrecomillado al invocar el CLI
+      # dentro del contenedor (bug confirmado en el log: el scanner recibe
+      # "--enableExperimental --exclude ... --exclude \"**/.git/**\"" como
+      # UN solo token en vez de flags separados) y además exige que 'out'
+      # exista de antemano. Por eso se invoca el CLI oficial directo por
+      # Docker, sin ese intermediario.
+      - name: OWASP Dependency-Check (SCA npm + pip + go)
+        run: |
+          mkdir -p reports/dependency-check
+          mkdir -p ~/.dependency-check-data
+          docker run --rm \
+            -v "${{ github.workspace }}:/src" \
+            -v "$HOME/.dependency-check-data:/usr/share/dependency-check/data" \
+            owasp/dependency-check:latest \
+            --project "UCE-Nexus" \
+            --scan /src \
+            --format ALL \
+            --out /src/reports/dependency-check \
+            --enableExperimental \
+            ${{ steps.nvd.outputs.flag }} \
+            --exclude "**/node_modules/**" \
+            --exclude "**/target/**" \
+            --exclude "**/venv/**" \
+            --exclude "**/dist/**" \
+            --exclude "**/chroma_db/**" \
             --exclude "**/.git/**"
         continue-on-error: true
 
