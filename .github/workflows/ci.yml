@@ -2,10 +2,10 @@ name: UCE-Nexus CI Pipeline
 
 on:
   push:
-    branches: [ "Dev", "QA" ]
+    branches: [ "Dev", "QA", "QA-Calidad" ]
     tags: [ "v*" ]
   pull_request:
-    branches: [ "main", "Dev", "QA" ]
+    branches: [ "main", "Dev", "QA", "QA-Calidad" ]
   workflow_dispatch:
 
 env:
@@ -193,7 +193,7 @@ jobs:
   build-identity:
     name: Build & Push Identity (MS-02)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.identity == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.identity == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -236,7 +236,7 @@ jobs:
   build-gateway:
     name: Build & Push Gateway (MS-01)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.gateway == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.gateway == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -279,7 +279,7 @@ jobs:
   build-booking:
     name: Build & Push Booking (MS-06)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.booking == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.booking == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -322,7 +322,7 @@ jobs:
   build-notifications:
     name: Build & Push Notifications (MS-07)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.notifications == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.notifications == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -365,7 +365,7 @@ jobs:
   build-catalog:
     name: Build & Push Catalog (MS-11)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.catalog == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.catalog == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -408,7 +408,7 @@ jobs:
   build-web-host:
     name: Build & Push Web Host
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.web_host == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.web_host == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -451,7 +451,7 @@ jobs:
   build-web-academic:
     name: Build & Push Web Academic
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.web_academic == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.web_academic == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -494,7 +494,7 @@ jobs:
   build-web-campus:
     name: Build & Push Web Campus
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.web_campus == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.web_campus == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -539,7 +539,7 @@ jobs:
   build-web-payments:
     name: Build & Push Web Payments
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.web_payments == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.web_payments == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -582,7 +582,7 @@ jobs:
   build-enrollment:
     name: Build & Push Enrollment (MS-03)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.enrollment == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.enrollment == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -625,7 +625,7 @@ jobs:
   build-ai-agent:
     name: Build & Push AI Agent (MS-08)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.ai_agent == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.ai_agent == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -668,7 +668,7 @@ jobs:
   build-web-chatbot:
     name: Build & Push Web Chatbot
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.web_chatbot == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.web_chatbot == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -711,7 +711,7 @@ jobs:
   build-geocampus:
     name: Build & Push GeoCampus (MS-09)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.geocampus == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.geocampus == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -754,7 +754,7 @@ jobs:
   build-payment-write:
     name: Build & Push Payment Write (MS-04)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.payment_write == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.payment_write == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -797,7 +797,7 @@ jobs:
   build-payment-read:
     name: Build & Push Payment Read (MS-05)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.payment_read == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.payment_read == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -840,7 +840,7 @@ jobs:
   build-audit:
     name: Build & Push Audit Service (MS-10)
     needs: [changes-detector, secrets-scan, run-tests]
-    if: ${{ needs.changes-detector.outputs.audit == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA' }}
+    if: ${{ (needs.changes-detector.outputs.audit == 'true' || github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'QA') && github.ref_name != 'QA-Calidad' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code

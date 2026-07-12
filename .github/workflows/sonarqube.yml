@@ -4,13 +4,15 @@ on:
   push:
     branches:
       - Dev
+      - QA-Calidad
   pull_request:
     branches:
       - Dev
+      - QA-Calidad
 
 jobs:
   sonarqube:
-    name: SonarQube Scan
+    name: SonarQube Scan (multi-lenguaje + SCA)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -18,35 +20,165 @@ jobs:
         with:
           fetch-depth: 0
 
+      # ==========================================
+      # 1. Toolchains: Node, Python, Go, Rust
+      # ==========================================
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-      - name: Run tests with coverage (Turborepo)
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: 'services/ms-06-booking/go.sum'
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Setup Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            services/ms-09-geocampus
+            services/ms-11-catalog
+
+      - name: Setup Protobuf Compiler (protoc, requerido por ms-11-catalog)
+        run: |
+          PROTOC_VERSION="25.3"
+          curl -sLO "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip"
+          sudo unzip -q protoc-${PROTOC_VERSION}-linux-x86_64.zip -d /usr/local
+          protoc --version
+
+      - name: Install dependencies (Node/TS)
+        run: npm ci --legacy-peer-deps
+
+      # ==========================================
+      # 2. Cobertura de tests por lenguaje
+      #    (continue-on-error: un lenguaje sin tests no debe tumbar el análisis)
+      # ==========================================
+      - name: Tests Node/TS con cobertura (Turborepo)
         run: npm run test -- --coverage
-        continue-on-error: true  # evita que un workspace sin tests tumbe todo el análisis
+        continue-on-error: true
 
+      - name: Tests Python con cobertura (ms-07-notifications)
+        working-directory: services/ms-07-notifications
+        run: |
+          pip install -r requirements.txt pytest-cov
+          pytest --cov=. --cov-report=xml:coverage.xml || true
+        continue-on-error: true
+
+      - name: Tests Python con cobertura (ms-08-ai-agent)
+        working-directory: services/ms-08-ai-agent
+        run: |
+          pip install -r requirements.txt pytest-cov
+          pytest --cov=. --cov-report=xml:coverage.xml || true
+        continue-on-error: true
+
+      - name: Tests Go con cobertura (ms-06-booking)
+        working-directory: services/ms-06-booking
+        run: go test ./... -coverprofile=coverage.out
+        continue-on-error: true
+
+      # ==========================================
+      # 3. Calidad de código Rust vía SARIF
+      #    (SonarQube no tiene analizador nativo de Rust; se importan los
+      #    hallazgos de clippy como issues externos)
+      # ==========================================
+      - name: Instalar clippy-sarif y sarif-fmt
+        run: cargo install clippy-sarif sarif-fmt
+        continue-on-error: true
+
+      - name: Clippy -> SARIF (ms-09-geocampus)
+        working-directory: services/ms-09-geocampus
+        run: cargo clippy --message-format=json -q | clippy-sarif | tee clippy.sarif | sarif-fmt
+        continue-on-error: true
+
+      - name: Clippy -> SARIF (ms-11-catalog)
+        working-directory: services/ms-11-catalog
+        run: cargo clippy --message-format=json -q | clippy-sarif | tee clippy.sarif | sarif-fmt
+        continue-on-error: true
+
+      # ==========================================
+      # 4. SCA (Software Composition Analysis)
+      #    OWASP Dependency-Check cubre npm, pip (requirements.txt) y Go
+      #    (go.sum) en una sola pasada. Rust (Cargo.lock) no tiene analizador
+      #    en Dependency-Check, por eso se complementa con cargo-audit.
+      # ==========================================
+      - name: OWASP Dependency-Check (SCA npm + pip + go)
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'UCE-Nexus'
+          path: '.'
+          format: 'ALL'
+          out: 'reports/dependency-check'
+          args: >
+            --enableExperimental
+            --nvdApiKey ${{ secrets.NVD_API_KEY }}
+            --exclude "**/node_modules/**"
+            --exclude "**/target/**"
+            --exclude "**/venv/**"
+            --exclude "**/dist/**"
+            --exclude "**/chroma_db/**"
+            --exclude "**/.git/**"
+        continue-on-error: true
+
+      - name: Instalar cargo-audit
+        run: cargo install cargo-audit
+        continue-on-error: true
+
+      - name: cargo audit (SCA Rust, ms-09-geocampus)
+        working-directory: services/ms-09-geocampus
+        run: cargo audit --json > cargo-audit-report.json || true
+        continue-on-error: true
+
+      - name: cargo audit (SCA Rust, ms-11-catalog)
+        working-directory: services/ms-11-catalog
+        run: cargo audit --json > cargo-audit-report.json || true
+        continue-on-error: true
+
+      - name: Publicar reportes SCA como artefacto (para el informe técnico)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sca-reports
+          path: |
+            reports/dependency-check/**
+            services/ms-09-geocampus/cargo-audit-report.json
+            services/ms-11-catalog/cargo-audit-report.json
+          retention-days: 30
+          if-no-files-found: warn
+
+      # ==========================================
+      # 5. SonarQube Scan
+      # ==========================================
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
-          SONAR_TOKEN: sqp_1d8b564fc3a6674e65b01013c2081c85dcb26bb6
-          SONAR_HOST_URL: http://98.90.146.42:9000
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
             -Dsonar.projectKey=g9-UCE-Nexus
             -Dsonar.projectName=g9-UCE-Nexus
             -Dsonar.sources=apps,services,packages
-            -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/dist/**,**/build/**,**/*.test.ts,**/*.test.tsx,**/*.test.js
+            -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/dist/**,**/build/**,**/target/**,**/venv/**,**/__pycache__/**,**/chroma_db/**,**/*.test.ts,**/*.test.tsx,**/*.test.js
             -Dsonar.javascript.lcov.reportPaths=**/coverage/lcov.info
             -Dsonar.typescript.lcov.reportPaths=**/coverage/lcov.info
+            -Dsonar.python.coverage.reportPaths=services/ms-07-notifications/coverage.xml,services/ms-08-ai-agent/coverage.xml
+            -Dsonar.go.coverage.reportPaths=services/ms-06-booking/coverage.out
+            -Dsonar.sarifReportPaths=reports/dependency-check/dependency-check-report.sarif,services/ms-09-geocampus/clippy.sarif,services/ms-11-catalog/clippy.sarif
 
       - name: SonarQube Quality Gate Check
         uses: SonarSource/sonarqube-quality-gate-action@v1
         timeout-minutes: 5
         env:
-          SONAR_TOKEN: sqp_1d8b564fc3a6674e65b01013c2081c85dcb26bb6
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
