@@ -100,12 +100,18 @@ jobs:
 
       - name: Clippy -> SARIF (ms-09-geocampus)
         working-directory: services/ms-09-geocampus
-        run: cargo clippy --message-format=json -q | clippy-sarif | tee clippy.sarif | sarif-fmt
+        run: |
+          cargo clippy --message-format=json -q | clippy-sarif | tee clippy.sarif | sarif-fmt
+          # clippy emite rutas relativas a este directorio (src/graph.rs); SonarQube
+          # necesita rutas relativas a la raíz del repo para resolver la ubicación.
+          sed -i 's#"uri": "src/#"uri": "services/ms-09-geocampus/src/#g' clippy.sarif
         continue-on-error: true
 
       - name: Clippy -> SARIF (ms-11-catalog)
         working-directory: services/ms-11-catalog
-        run: cargo clippy --message-format=json -q | clippy-sarif | tee clippy.sarif | sarif-fmt
+        run: |
+          cargo clippy --message-format=json -q | clippy-sarif | tee clippy.sarif | sarif-fmt
+          sed -i 's#"uri": "src/#"uri": "services/ms-11-catalog/src/#g' clippy.sarif
         continue-on-error: true
 
       # ==========================================
@@ -114,6 +120,16 @@ jobs:
       #    (go.sum) en una sola pasada. Rust (Cargo.lock) no tiene analizador
       #    en Dependency-Check, por eso se complementa con cargo-audit.
       # ==========================================
+      - name: Preparar flag de NVD API key
+        id: nvd
+        run: |
+          if [ -n "${{ secrets.NVD_API_KEY }}" ]; then
+            echo "flag=--nvdApiKey ${{ secrets.NVD_API_KEY }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "flag=" >> "$GITHUB_OUTPUT"
+            echo "::warning::NVD_API_KEY no configurado; Dependency-Check consultará la NVD sin autenticar (más lento / riesgo de rate-limit)."
+          fi
+
       - name: OWASP Dependency-Check (SCA npm + pip + go)
         uses: dependency-check/Dependency-Check_Action@main
         with:
@@ -123,13 +139,23 @@ jobs:
           out: 'reports/dependency-check'
           args: >
             --enableExperimental
-            --nvdApiKey ${{ secrets.NVD_API_KEY }}
+            ${{ steps.nvd.outputs.flag }}
             --exclude "**/node_modules/**"
             --exclude "**/target/**"
             --exclude "**/venv/**"
             --exclude "**/dist/**"
             --exclude "**/chroma_db/**"
             --exclude "**/.git/**"
+        continue-on-error: true
+
+      - name: Verificar que Dependency-Check produjo reportes
+        run: |
+          if [ ! -f "reports/dependency-check/dependency-check-report.sarif" ]; then
+            echo "::error::Dependency-Check no generó dependency-check-report.sarif — revisa el log del step anterior."
+            ls -la reports/dependency-check/ 2>/dev/null || echo "(la carpeta reports/dependency-check ni siquiera existe)"
+          else
+            echo "OK: $(wc -l < reports/dependency-check/dependency-check-report.sarif) líneas en el SARIF"
+          fi
         continue-on-error: true
 
       - name: Instalar cargo-audit
@@ -170,7 +196,10 @@ jobs:
             -Dsonar.projectKey=g9-UCE-Nexus
             -Dsonar.projectName=g9-UCE-Nexus
             -Dsonar.sources=apps,services,packages
-            -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/dist/**,**/build/**,**/target/**,**/venv/**,**/__pycache__/**,**/chroma_db/**,**/*.test.ts,**/*.test.tsx,**/*.test.js
+            -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/dist/**,**/build/**,**/target/**,**/venv/**,**/__pycache__/**,**/chroma_db/**,**/*.sarif,**/coverage.xml,**/coverage.out,**/cargo-audit-report.json
+            -Dsonar.tests=apps,services,packages
+            -Dsonar.test.inclusions=**/*.test.ts,**/*.test.tsx,**/*.test.js,**/test_*.py,**/*_test.go,**/tests/**
+            -Dsonar.python.version=3.10
             -Dsonar.javascript.lcov.reportPaths=**/coverage/lcov.info
             -Dsonar.typescript.lcov.reportPaths=**/coverage/lcov.info
             -Dsonar.python.coverage.reportPaths=services/ms-07-notifications/coverage.xml,services/ms-08-ai-agent/coverage.xml
