@@ -14,7 +14,7 @@ jobs:
   sonarqube:
     name: SonarQube Scan (multi-lenguaje + SCA)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -129,26 +129,50 @@ jobs:
       # exista de antemano. Por eso se invoca el CLI oficial directo por
       # Docker, sin ese intermediario.
       #
-      # Se usa --noupdate: una sincronización completa de la base NVD desde
-      # cero tarda más de 30 min incluso con NVD_API_KEY (verificado: seguía
-      # descargando a los 24m48s). --noupdate usa la base de datos ya
-      # empaquetada dentro de la imagen owasp/dependency-check (se actualiza
-      # cada vez que Sonarsource/OWASP publican una nueva build de la
-      # imagen) en vez de descargarla en cada corrida — sigue siendo un
-      # análisis SCA real, solo que la base puede tener algunas semanas de
-      # antigüedad en lugar de ser del minuto exacto.
+      # --noupdate por sí solo NO funciona en un runner fresco: la imagen
+      # owasp/dependency-check no trae una base de datos precargada, así que
+      # --noupdate sin un update previo exitoso falla con exit code 13
+      # (NoDataException: "Autoupdate is disabled and the database does not
+      # exist" — verificado). La solución es cachear la base de datos con una
+      # key ESTABLE (no ligada a github.run_id) para que, una vez que un
+      # update complete con éxito, quede persistida y las corridas
+      # siguientes puedan usar --noupdate de verdad.
+      - name: Preparar flag de NVD API key
+        id: nvd
+        run: |
+          if [ -n "${{ secrets.NVD_API_KEY }}" ]; then
+            echo "flag=--nvdApiKey ${{ secrets.NVD_API_KEY }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "flag=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cache de la base de datos NVD (Dependency-Check)
+        id: depcheck-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.dependency-check-data
+          key: depcheck-nvd-db-v1
+
       - name: OWASP Dependency-Check (SCA npm + pip + go)
         run: |
           mkdir -p reports/dependency-check
+          mkdir -p ~/.dependency-check-data
+          UPDATE_FLAG="--noupdate"
+          if [ "${{ steps.depcheck-cache.outputs.cache-hit }}" != "true" ]; then
+            echo "No hay cache previo de la base NVD: se hará un update real esta vez."
+            UPDATE_FLAG=""
+          fi
           docker run --rm \
             -v "${{ github.workspace }}:/src" \
+            -v "$HOME/.dependency-check-data:/usr/share/dependency-check/data" \
             owasp/dependency-check:latest \
             --project "UCE-Nexus" \
             --scan /src \
             --format ALL \
             --out /src/reports/dependency-check \
-            --noupdate \
+            $UPDATE_FLAG \
             --enableExperimental \
+            ${{ steps.nvd.outputs.flag }} \
             --exclude "**/node_modules/**" \
             --exclude "**/target/**" \
             --exclude "**/venv/**" \
