@@ -146,9 +146,9 @@ jobs:
             echo "flag=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Cache de la base de datos NVD (Dependency-Check)
+      - name: Restaurar cache de la base de datos NVD (Dependency-Check)
         id: depcheck-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ~/.dependency-check-data
           key: depcheck-nvd-db-v1
@@ -180,6 +180,19 @@ jobs:
             --exclude "**/chroma_db/**" \
             --exclude "**/.git/**"
         continue-on-error: true
+
+      # Los "post steps" de actions/cache solo guardan si el job entero
+      # termina en éxito (post-if: success()) — como el Quality Gate Check
+      # falla a propósito por baja cobertura, eso bloqueaba el guardado del
+      # cache SIEMPRE, sin importar si la descarga de 40 min había
+      # completado bien (verificado: pasó exactamente eso). Por eso se
+      # guarda explícito aquí, con if: always(), en cuanto termina de usarse.
+      - name: Guardar cache de la base de datos NVD (si hubo cache miss)
+        if: always() && steps.depcheck-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.dependency-check-data
+          key: depcheck-nvd-db-v1
 
       - name: Verificar que Dependency-Check produjo reportes
         run: |
