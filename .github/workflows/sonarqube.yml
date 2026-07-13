@@ -121,24 +121,6 @@ jobs:
       #    (go.sum) en una sola pasada. Rust (Cargo.lock) no tiene analizador
       #    en Dependency-Check, por eso se complementa con cargo-audit.
       # ==========================================
-      - name: Preparar flag de NVD API key
-        id: nvd
-        run: |
-          if [ -n "${{ secrets.NVD_API_KEY }}" ]; then
-            echo "flag=--nvdApiKey ${{ secrets.NVD_API_KEY }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "flag=" >> "$GITHUB_OUTPUT"
-            echo "::warning::NVD_API_KEY no configurado; Dependency-Check consultará la NVD sin autenticar (más lento / riesgo de rate-limit)."
-          fi
-
-      - name: Cache de la base de datos NVD (Dependency-Check)
-        uses: actions/cache@v4
-        with:
-          path: ~/.dependency-check-data
-          key: depcheck-db-${{ github.run_id }}
-          restore-keys: |
-            depcheck-db-
-
       # La GitHub Action "dependency-check/Dependency-Check_Action" concatena
       # todo 'args' como un único argumento entrecomillado al invocar el CLI
       # dentro del contenedor (bug confirmado en el log: el scanner recibe
@@ -146,20 +128,27 @@ jobs:
       # UN solo token en vez de flags separados) y además exige que 'out'
       # exista de antemano. Por eso se invoca el CLI oficial directo por
       # Docker, sin ese intermediario.
+      #
+      # Se usa --noupdate: una sincronización completa de la base NVD desde
+      # cero tarda más de 30 min incluso con NVD_API_KEY (verificado: seguía
+      # descargando a los 24m48s). --noupdate usa la base de datos ya
+      # empaquetada dentro de la imagen owasp/dependency-check (se actualiza
+      # cada vez que Sonarsource/OWASP publican una nueva build de la
+      # imagen) en vez de descargarla en cada corrida — sigue siendo un
+      # análisis SCA real, solo que la base puede tener algunas semanas de
+      # antigüedad en lugar de ser del minuto exacto.
       - name: OWASP Dependency-Check (SCA npm + pip + go)
         run: |
           mkdir -p reports/dependency-check
-          mkdir -p ~/.dependency-check-data
           docker run --rm \
             -v "${{ github.workspace }}:/src" \
-            -v "$HOME/.dependency-check-data:/usr/share/dependency-check/data" \
             owasp/dependency-check:latest \
             --project "UCE-Nexus" \
             --scan /src \
             --format ALL \
             --out /src/reports/dependency-check \
+            --noupdate \
             --enableExperimental \
-            ${{ steps.nvd.outputs.flag }} \
             --exclude "**/node_modules/**" \
             --exclude "**/target/**" \
             --exclude "**/venv/**" \
